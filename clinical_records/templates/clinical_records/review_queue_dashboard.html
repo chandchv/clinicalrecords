@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manual Review Queue - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stats-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .priority-urgent { color: #dc3545; }
+    .priority-high { color: #fd7e14; }
+    .priority-normal { color: #28a745; }
+    .priority-low { color: #6c757d; }
+    
+    .status-pending { color: #ffc107; }
+    .status-in-progress { color: #17a2b8; }
+    .status-completed { color: #28a745; }
+    .status-overdue { color: #dc3545; }
+    
+    .review-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: box-shadow 0.2s;
+    }
+    
+    .review-item:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .review-meta {
+        font-size: 0.85rem;
+        color: #666;
+    }
+    
+    .btn-assign {
+        background-color: #17a2b8;
+        border-color: #17a2b8;
+        color: white;
+        font-size: 0.8rem;
+        padding: 4px 12px;
+    }
+    
+    .btn-assign:hover {
+        background-color: #138496;
+        border-color: #117a8b;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Manual Review Queue</h1>
+                <div>
+                    <a href="{% url 'clinical_records:review_queue_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list"></i> View All Reviews
+                    </a>
+                    <a href="{% url 'clinical_records:reviewer_performance' %}" class="btn btn-outline-info">
+                        <i class="fas fa-chart-line"></i> My Performance
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="stats-card text-center">
+                <div class="stats-number status-pending">{{ total_pending }}</div>
+                <div class="stats-label">Pending</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card text-center">
+                <div class="stats-number status-in-progress">{{ total_in_progress }}</div>
+                <div class="stats-label">In Progress</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card text-center">
+                <div class="stats-number status-overdue">{{ overdue_count }}</div>
+                <div class="stats-label">Overdue</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card text-center">
+                <div class="stats-number status-in-progress">{{ my_assigned }}</div>
+                <div class="stats-label">My Reviews</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card text-center">
+                <div class="stats-number status-completed">{{ completed_today }}</div>
+                <div class="stats-label">Completed Today</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card text-center">
+                <div class="stats-number">
+                    {% if total_pending > 0 %}
+                        {{ completed_today|floatformat:0 }}/{{ total_pending|add:completed_today|floatformat:0 }}
+                    {% else %}
+                        100%
+                    {% endif %}
+                </div>
+                <div class="stats-label">Completion Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reviews -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock"></i> Recent Reviews Requiring Attention
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_reviews %}
+                        {% for review in recent_reviews %}
+                        <div class="review-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-file-alt"></i>
+                                        {{ review.document.original_filename|truncatechars:40 }}
+                                    </h6>
+                                    <div class="review-meta">
+                                        <i class="fas fa-user"></i>
+                                        {{ review.document.clinical_record.patient.get_full_name }}
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge badge-secondary">{{ review.get_review_type_display }}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge 
+                                        {% if review.priority == 'urgent' %}badge-danger
+                                        {% elif review.priority == 'high' %}badge-warning
+                                        {% elif review.priority == 'normal' %}badge-success
+                                        {% else %}badge-secondary{% endif %}">
+                                        {{ review.get_priority_display }}
+                                    </span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge 
+                                        {% if review.status == 'pending' %}badge-warning
+                                        {% elif review.status == 'in_progress' %}badge-info
+                                        {% elif review.status == 'completed' %}badge-success
+                                        {% else %}badge-secondary{% endif %}">
+                                        {{ review.get_status_display }}
+                                    </span>
+                                    {% if review.is_overdue %}
+                                        <br><small class="text-danger">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            {{ review.days_overdue }} day{{ review.days_overdue|pluralize }} overdue
+                                        </small>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2 text-right">
+                                    {% if not review.assigned_to %}
+                                        <button class="btn btn-assign btn-sm" 
+                                                onclick="assignToMe('{{ review.id }}')">
+                                            <i class="fas fa-hand-paper"></i> Assign to Me
+                                        </button>
+                                    {% elif review.assigned_to == request.user %}
+                                        <a href="{% url 'clinical_records:review_detail' review.id %}" 
+                                           class="btn btn-primary btn-sm">
+                                            <i class="fas fa-edit"></i> Continue Review
+                                        </a>
+                                    {% else %}
+                                        <small class="text-muted">
+                                            Assigned to {{ review.assigned_to.get_full_name }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if review.confidence_before %}
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <small class="text-muted">
+                                        <i class="fas fa-percentage"></i>
+                                        OCR Confidence: {{ review.confidence_before|floatformat:1 }}%
+                                        {% if review.confidence_before < 0.7 %}
+                                            <span class="text-warning">
+                                                <i class="fas fa-exclamation-triangle"></i> Low confidence
+                                            </span>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="text-center mt-3">
+                            <a href="{% url 'clinical_records:review_queue_list' %}" class="btn btn-outline-primary">
+                                View All Reviews <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3">No reviews pending!</h5>
+                            <p class="text-muted">All documents have been processed and reviewed.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assignment Modal -->
+<div class="modal fade" id="assignmentModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Review</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to assign this review to yourself?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmAssignment">
+                    Yes, Assign to Me
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentReviewId = null;
+
+function assignToMe(reviewId) {
+    currentReviewId = reviewId;
+    $('#assignmentModal').modal('show');
+}
+
+document.getElementById('confirmAssignment').addEventListener('click', function() {
+    if (currentReviewId) {
+        // Show loading state
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assigning...';
+        this.disabled = true;
+        
+        // Make AJAX request
+        fetch(`/clinical-records/reviews/${currentReviewId}/assign-to-me/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect to review detail page
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Error: ' + data.error);
+                $('#assignmentModal').modal('hide');
+                // Reset button
+                document.getElementById('confirmAssignment').innerHTML = 'Yes, Assign to Me';
+                document.getElementById('confirmAssignment').disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while assigning the review.');
+            $('#assignmentModal').modal('hide');
+            // Reset button
+            document.getElementById('confirmAssignment').innerHTML = 'Yes, Assign to Me';
+            document.getElementById('confirmAssignment').disabled = false;
+        });
+    }
+});
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}"

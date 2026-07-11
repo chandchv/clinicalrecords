@@ -1,0 +1,13 @@
+{
+  "welcome": "Bienvenue",
+  "logout": "Déconnexion",
+  "dashboard": "Tableau de bord",
+  "records": "Enregistrements",
+  "analytics": "Analyses",
+  "upload": "Télécharger",
+  "admin": "Administrateur",
+  "confirm_logout": "Confirmer la déconnexion",
+  "logout_message": "Êtes-vous sûr de vouloir vous déconnecter?",
+  "yes_logout": "Oui, se déconnecter",
+  "cancel": "Annuler"
+}

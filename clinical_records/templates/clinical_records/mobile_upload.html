@@ -1,0 +1,581 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mobile Upload{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'clinical_records/css/upload.css' %}">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<style>
+    /* Mobile-specific styles */
+    body {
+        margin: 0;
+        padding: 0;
+        background: #f8f9fa;
+    }
+    
+    .upload-container {
+        padding: 10px;
+        min-height: 100vh;
+    }
+    
+    .mobile-upload-header {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .mobile-upload-header h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+        color: #2c3e50;
+    }
+    
+    .mobile-camera-area {
+        background: white;
+        border-radius: 12px;
+        padding: 30px 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .camera-icon {
+        font-size: 64px;
+        color: #28a745;
+        margin-bottom: 20px;
+    }
+    
+    .mobile-camera-area h2 {
+        color: #495057;
+        margin-bottom: 15px;
+        font-size: 20px;
+    }
+    
+    .mobile-camera-area p {
+        color: #6c757d;
+        margin-bottom: 25px;
+        line-height: 1.5;
+    }
+    
+    .btn-camera-large {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 18px 36px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .btn-camera-large:hover {
+        background: #218838;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
+    
+    .btn-camera-large:active {
+        transform: translateY(0);
+    }
+    
+    .mobile-file-upload {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .mobile-file-upload h3 {
+        color: #495057;
+        margin-bottom: 15px;
+        font-size: 18px;
+    }
+    
+    .mobile-drop-zone {
+        border: 2px dashed #007bff;
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        background: #f8f9ff;
+        transition: all 0.3s ease;
+    }
+    
+    .mobile-drop-zone:active {
+        border-color: #0056b3;
+        background: #e6f3ff;
+    }
+    
+    .mobile-drop-zone i {
+        font-size: 36px;
+        color: #007bff;
+        margin-bottom: 15px;
+    }
+    
+    .mobile-drop-zone p {
+        color: #6c757d;
+        margin: 0;
+        font-size: 16px;
+    }
+    
+    .mobile-queue {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .mobile-queue h3 {
+        color: #495057;
+        margin-bottom: 15px;
+        font-size: 18px;
+    }
+    
+    .mobile-upload-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .mobile-upload-item:last-child {
+        border-bottom: none;
+    }
+    
+    .mobile-file-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .mobile-file-name {
+        font-weight: 500;
+        color: #495057;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 5px;
+    }
+    
+    .mobile-file-status {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .mobile-progress {
+        width: 60px;
+        margin-left: 15px;
+        text-align: center;
+    }
+    
+    .mobile-progress-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: conic-gradient(#28a745 0deg, #e9ecef 0deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 5px;
+        position: relative;
+    }
+    
+    .mobile-progress-circle::before {
+        content: '';
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: white;
+        position: absolute;
+    }
+    
+    .mobile-progress-text {
+        font-size: 10px;
+        font-weight: 600;
+        color: #495057;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Full-screen camera modal for mobile */
+    .mobile-camera-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        z-index: 2000;
+        display: none;
+    }
+    
+    .mobile-camera-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mobile-camera-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        background: rgba(0,0,0,0.5);
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .mobile-camera-title {
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    .mobile-camera-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px;
+    }
+    
+    .mobile-camera-video {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .mobile-camera-controls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.5);
+        padding: 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 30px;
+    }
+    
+    .mobile-capture-btn {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: white;
+        border: 4px solid #ccc;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .mobile-capture-btn:active {
+        transform: scale(0.95);
+        background: #f0f0f0;
+    }
+    
+    .mobile-switch-camera {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        border: 2px solid rgba(255,255,255,0.5);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    {% if error %}
+    <div class="alert alert-error">
+        <i class="icon-error"></i>
+        {{ error }}
+    </div>
+    {% else %}
+    
+    <!-- Mobile Upload Header -->
+    <div class="mobile-upload-header">
+        <h1>Upload Document</h1>
+        {% if record %}
+        <div class="record-summary">
+            <strong>{{ record.patient_name }}</strong><br>
+            <span style="color: #6c757d;">{{ record.title }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Upload Configuration -->
+    <div class="upload-config" style="display: none;">
+        <script type="application/json" id="upload-config">
+        {
+            "recordId": "{{ record.id|default:'' }}",
+            "maxFileSize": {{ max_file_size }},
+            "allowedExtensions": {{ allowed_extensions|safe }},
+            "mobileOptimized": true,
+            "csrfToken": "{{ csrf_token }}"
+        }
+        </script>
+    </div>
+
+    <!-- Camera Capture Area -->
+    <div class="mobile-camera-area">
+        <div class="camera-icon">📷</div>
+        <h2>Take a Photo</h2>
+        <p>Capture documents directly with your camera for instant upload and processing.</p>
+        <button type="button" class="btn-camera-large" id="mobile-camera-capture">
+            <i class="icon-camera"></i>
+            Open Camera
+        </button>
+    </div>
+
+    <!-- File Upload Area -->
+    <div class="mobile-file-upload">
+        <h3>Or Choose Files</h3>
+        <div class="mobile-drop-zone" id="mobile-drop-zone">
+            <i class="icon-upload"></i>
+            <p>Tap to select files</p>
+            <input type="file" id="mobile-file-input" multiple accept="{{ allowed_extensions|join:',' }}" style="display: none;">
+        </div>
+        <div class="upload-info" style="margin-top: 15px; text-align: center;">
+            <small style="color: #6c757d;">
+                Max size: {{ max_file_size|filesizeformat }}<br>
+                Types: {{ allowed_extensions|join:", " }}
+            </small>
+        </div>
+    </div>
+
+    <!-- Upload Queue -->
+    <div class="mobile-queue" id="mobile-queue" style="display: none;">
+        <h3>Upload Progress</h3>
+        <div id="mobile-queue-list">
+            <!-- Upload items will be added here -->
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<!-- Full-screen Camera Modal -->
+<div class="mobile-camera-modal" id="mobile-camera-modal">
+    <div class="mobile-camera-container">
+        <div class="mobile-camera-header">
+            <div class="mobile-camera-title">Capture Document</div>
+            <button type="button" class="mobile-camera-close" id="mobile-close-camera">&times;</button>
+        </div>
+        <video class="mobile-camera-video" id="mobile-camera-video" autoplay playsinline></video>
+        <canvas id="mobile-camera-canvas" style="display: none;"></canvas>
+        <div class="mobile-camera-controls">
+            <button type="button" class="mobile-switch-camera" id="mobile-switch-camera" style="display: none;">
+                <i class="icon-switch"></i>
+            </button>
+            <button type="button" class="mobile-capture-btn" id="mobile-capture-photo">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: #dc3545;"></div>
+            </button>
+            <div style="width: 50px;"></div> <!-- Spacer for centering -->
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Upload Item Template -->
+<template id="mobile-upload-item-template">
+    <div class="mobile-upload-item" data-upload-id="">
+        <div class="mobile-file-info">
+            <div class="mobile-file-name"></div>
+            <div class="mobile-file-status"></div>
+        </div>
+        <div class="mobile-progress">
+            <div class="mobile-progress-circle">
+                <div class="mobile-progress-text">0%</div>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'clinical_records/js/upload.js' %}"></script>
+<script>
+// Mobile-specific enhancements
+document.addEventListener('DOMContentLoaded', () => {
+    // Handle mobile drop zone
+    const mobileDropZone = document.getElementById('mobile-drop-zone');
+    const mobileFileInput = document.getElementById('mobile-file-input');
+    
+    if (mobileDropZone && mobileFileInput) {
+        mobileDropZone.addEventListener('click', () => {
+            mobileFileInput.click();
+        });
+        
+        mobileFileInput.addEventListener('change', (e) => {
+            if (window.documentUploader) {
+                window.documentUploader.handleFiles(e.target.files);
+            }
+        });
+    }
+    
+    // Handle mobile camera
+    const mobileCameraCapture = document.getElementById('mobile-camera-capture');
+    const mobileCameraModal = document.getElementById('mobile-camera-modal');
+    const mobileCloseCamera = document.getElementById('mobile-close-camera');
+    const mobileCapturePhoto = document.getElementById('mobile-capture-photo');
+    
+    let mobileStream = null;
+    
+    if (mobileCameraCapture) {
+        mobileCameraCapture.addEventListener('click', async () => {
+            try {
+                mobileStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+                
+                const video = document.getElementById('mobile-camera-video');
+                video.srcObject = mobileStream;
+                mobileCameraModal.style.display = 'block';
+                
+                // Lock orientation if possible
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('portrait').catch(() => {});
+                }
+                
+            } catch (error) {
+                alert('Camera access denied or not available');
+            }
+        });
+    }
+    
+    if (mobileCloseCamera) {
+        mobileCloseCamera.addEventListener('click', () => {
+            if (mobileStream) {
+                mobileStream.getTracks().forEach(track => track.stop());
+            }
+            mobileCameraModal.style.display = 'none';
+            
+            // Unlock orientation
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+        });
+    }
+    
+    if (mobileCapturePhoto) {
+        mobileCapturePhoto.addEventListener('click', () => {
+            const video = document.getElementById('mobile-camera-video');
+            const canvas = document.getElementById('mobile-camera-canvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Close camera
+            if (mobileStream) {
+                mobileStream.getTracks().forEach(track => track.stop());
+            }
+            mobileCameraModal.style.display = 'none';
+            
+            // Upload captured image
+            if (window.documentUploader) {
+                window.documentUploader.uploadCameraCapture(imageData);
+            }
+        });
+    }
+    
+    // Override queue rendering for mobile
+    if (window.documentUploader) {
+        const originalRenderQueueItem = window.documentUploader.renderQueueItem;
+        window.documentUploader.renderQueueItem = function(uploadItem) {
+            const template = document.getElementById('mobile-upload-item-template');
+            const queueList = document.getElementById('mobile-queue-list');
+            
+            if (!template || !queueList) return;
+            
+            const clone = template.content.cloneNode(true);
+            const itemElement = clone.querySelector('.mobile-upload-item');
+            
+            itemElement.setAttribute('data-upload-id', uploadItem.id);
+            
+            clone.querySelector('.mobile-file-name').textContent = uploadItem.file.name;
+            clone.querySelector('.mobile-file-status').textContent = uploadItem.status;
+            
+            queueList.appendChild(clone);
+            
+            // Show queue
+            document.getElementById('mobile-queue').style.display = 'block';
+        };
+        
+        // Override queue item updates for mobile
+        const originalUpdateQueueItem = window.documentUploader.updateQueueItem;
+        window.documentUploader.updateQueueItem = function(uploadItem) {
+            const itemElement = document.querySelector(`[data-upload-id="${uploadItem.id}"]`);
+            if (!itemElement) return;
+            
+            const statusElement = itemElement.querySelector('.mobile-file-status');
+            const progressText = itemElement.querySelector('.mobile-progress-text');
+            const progressCircle = itemElement.querySelector('.mobile-progress-circle');
+            
+            statusElement.textContent = uploadItem.status;
+            
+            if (uploadItem.status === 'uploading') {
+                progressText.textContent = `${uploadItem.progress}%`;
+                const angle = (uploadItem.progress / 100) * 360;
+                progressCircle.style.background = `conic-gradient(#007bff ${angle}deg, #e9ecef ${angle}deg)`;
+            } else if (uploadItem.status === 'completed') {
+                progressText.textContent = '✓';
+                progressCircle.style.background = 'conic-gradient(#28a745 360deg, #28a745 360deg)';
+            } else if (uploadItem.status === 'failed') {
+                progressText.textContent = '✗';
+                progressCircle.style.background = 'conic-gradient(#dc3545 360deg, #dc3545 360deg)';
+            } else if (uploadItem.status === 'processing') {
+                progressText.textContent = '⟳';
+                progressCircle.style.background = 'conic-gradient(#17a2b8 360deg, #17a2b8 360deg)';
+            }
+        };
+    }
+});
+
+// Prevent zoom on double tap
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (event) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+
+// Handle device orientation changes
+window.addEventListener('orientationchange', () => {
+    // Adjust layout if needed
+    setTimeout(() => {
+        window.scrollTo(0, 0);
+    }, 100);
+});
+</script>
+{% endblock %}

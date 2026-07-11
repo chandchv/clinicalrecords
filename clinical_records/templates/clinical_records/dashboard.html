@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Records Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #4299e1;
+            background-color: #f7fafc;
+        }
+
+        .upload-area.dragover {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <div class="h-10 w-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-file-medical text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Clinical Records</h1>
+                        <p class="text-blue-100">Secure Medical Document Management</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-sm text-blue-100">Welcome, {{ user.first_name|default:"User" }}</p>
+                        <p class="text-xs text-blue-200">{{ patient.full_name|default:"Patient" }}</p>
+                    </div>
+                    <div class="h-10 w-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                <div class="flex items-center">
+                    <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-file-medical text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900" id="total-records">-</p>
+                        <p class="text-sm text-gray-600">Total Records</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                <div class="flex items-center">
+                    <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-upload text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900" id="recent-uploads">-</p>
+                        <p class="text-sm text-gray-600">Recent Uploads</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                <div class="flex items-center">
+                    <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-clock text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900" id="processing-queue">-</p>
+                        <p class="text-sm text-gray-600">Processing</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+                <div class="flex items-center">
+                    <div class="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-shield-alt text-orange-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">100%</p>
+                        <p class="text-sm text-gray-600">Secure</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+
+            <!-- Upload Section -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-sm p-8">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                        <i class="fas fa-upload text-blue-600 mr-3"></i>
+                        Upload Medical Records
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Prescription Upload -->
+                        <div class="text-center p-6 border-2 border-dashed border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
+                            onclick="openUploadModal('prescription')">
+                            <div
+                                class="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-prescription-bottle-alt text-blue-600 text-2xl"></i>
+                            </div>
+                            <h3 class="font-semibold text-gray-900 mb-2">Prescription</h3>
+                            <p class="text-sm text-gray-600">Upload prescription images or PDFs</p>
+                        </div>
+
+                        <!-- Lab Report Upload -->
+                        <div class="text-center p-6 border-2 border-dashed border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all cursor-pointer"
+                            onclick="openUploadModal('lab-report')">
+                            <div
+                                class="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-vial text-green-600 text-2xl"></i>
+                            </div>
+                            <h3 class="font-semibold text-gray-900 mb-2">Lab Report</h3>
+                            <p class="text-sm text-gray-600">Upload lab test results</p>
+                        </div>
+
+                        <!-- Medical Record Upload -->
+                        <div class="text-center p-6 border-2 border-dashed border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-all cursor-pointer"
+                            onclick="openUploadModal('record')">
+                            <div
+                                class="h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-file-medical text-purple-600 text-2xl"></i>
+                            </div>
+                            <h3 class="font-semibold text-gray-900 mb-2">Medical Record</h3>
+                            <p class="text-sm text-gray-600">Upload other medical documents</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button onclick="viewRecords()"
+                            class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                            <div class="flex items-center">
+                                <i class="fas fa-list text-blue-600 mr-3"></i>
+                                <span>View All Records</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+
+                        <button onclick="downloadRecords()"
+                            class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                            <div class="flex items-center">
+                                <i class="fas fa-download text-green-600 mr-3"></i>
+                                <span>Download Records</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+
+                        <button onclick="shareRecords()"
+                            class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                            <div class="flex items-center">
+                                <i class="fas fa-share text-purple-600 mr-3"></i>
+                                <span>Share Records</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                    <div id="recent-activity" class="space-y-3">
+                        <!-- Recent activity items will be loaded here -->
+                        <div class="text-center text-gray-500 py-4">
+                            <i class="fas fa-clock text-2xl mb-2"></i>
+                            <p class="text-sm">No recent activity</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Records -->
+        <div class="bg-white rounded-xl shadow-sm">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-900">Recent Records</h2>
+                    <button onclick="viewAllRecords()" class="text-blue-600 hover:text-blue-800 font-medium">
+                        View All <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="recent-records" class="space-y-4">
+                    <!-- Recent records will be loaded here -->
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-file-medical text-4xl mb-4"></i>
+                        <p class="text-lg font-medium text-gray-900 mb-2">No records yet</p>
+                        <p class="text-gray-600">Upload your first medical record to get started</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="modal-title" class="text-lg font-semibold text-gray-900">Upload File</h3>
+                        <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="space-y-4">
+                            <!-- File Upload Area -->
+                            <div class="upload-area rounded-lg p-6 text-center cursor-pointer"
+                                onclick="document.getElementById('file-input').click()">
+                                <input type="file" id="file-input" class="hidden"
+                                    accept=".pdf,.jpg,.jpeg,.png,.tiff,.dcm,.doc,.docx">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                                <p class="text-gray-600">Click to select file or drag and drop</p>
+                                <p class="text-sm text-gray-500 mt-2">PDF, JPG, PNG, TIFF, DICOM, DOC, DOCX supported
+                                </p>
+                            </div>
+
+                            <!-- Form Fields -->
+                            <div id="form-fields" class="space-y-4">
+                                <!-- Dynamic form fields will be inserted here -->
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit"
+                                class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-upload mr-2"></i>
+                                Upload File
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUploadType = '';
+
+        // Load dashboard data
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check for token in URL parameters and save to localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {
+                localStorage.setItem('jwt_token', token);
+                sessionStorage.setItem('jwt_token', token);
+                // Clear token from URL to be clean
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            loadDashboardData();
+            loadRecentRecords();
+        });
+
+        async function fetchWithAuth(url, options = {}) {
+            const jwtToken = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+            const headers = options.headers || {};
+            
+            if (options.body && !(options.body instanceof FormData)) {
+                headers['Content-Type'] = 'application/json';
+            }
+            
+            if (jwtToken && jwtToken !== 'null' && jwtToken !== 'undefined') {
+                headers['Authorization'] = `Bearer ${jwtToken}`;
+            }
+            
+            let response = await fetch(url, {
+                ...options,
+                headers: headers
+            });
+            
+            if (!response.ok && (response.status === 401 || response.status === 403) && headers['Authorization']) {
+                console.warn('JWT token invalid or expired. Clearing token and retrying with session...');
+                localStorage.removeItem('jwt_token');
+                sessionStorage.removeItem('jwt_token');
+                
+                const newHeaders = { ...headers };
+                delete newHeaders['Authorization'];
+                
+                response = await fetch(url, {
+                    ...options,
+                    headers: newHeaders
+                });
+            }
+            
+            return response;
+        }
+
+        async function loadDashboardData() {
+            try {
+                const response = await fetchWithAuth('/api/patient/upload-history/');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('total-records').textContent = data.statistics.total_records || 0;
+                    document.getElementById('recent-uploads').textContent = data.statistics.recent_uploads || 0;
+                    document.getElementById('processing-queue').textContent = data.statistics.processing_queue || 0;
+                }
+            } catch (error) {
+                console.log('Failed to load dashboard data:', error);
+            }
+        }
+
+        async function loadRecentRecords() {
+            try {
+                const response = await fetchWithAuth('/api/patient/external-records/?page_size=5');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayRecentRecords(data.results || []);
+                }
+            } catch (error) {
+                console.log('Failed to load recent records:', error);
+            }
+        }
+
+        function displayRecentRecords(records) {
+            const container = document.getElementById('recent-records');
+
+            if (records.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-file-medical text-4xl mb-4"></i>
+                        <p class="text-lg font-medium text-gray-900 mb-2">No records yet</p>
+                        <p class="text-gray-600">Upload your first medical record to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = records.map(record => `
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center">
+                        <div class="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-file-medical text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900">${record.title}</h4>
+                            <p class="text-sm text-gray-500">${record.record_type.replace('_', ' ').toUpperCase()} • ${new Date(record.created_at).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                        ${record.status.toUpperCase()}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function openUploadModal(type) {
+            currentUploadType = type;
+            const modal = document.getElementById('upload-modal');
+            const title = document.getElementById('modal-title');
+            const formFields = document.getElementById('form-fields');
+
+            // Set title and form fields based on type
+            switch (type) {
+                case 'prescription':
+                    title.textContent = 'Upload Prescription';
+                    formFields.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Prescription for Diabetes Medication">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Prescription Date</label>
+                            <input type="date" name="prescription_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Doctor Name</label>
+                            <input type="text" name="doctor_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Dr. John Smith">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pharmacy Name</label>
+                            <input type="text" name="pharmacy_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ABC Pharmacy">
+                        </div>
+                    `;
+                    break;
+                case 'lab-report':
+                    title.textContent = 'Upload Lab Report';
+                    formFields.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Blood Test Results - CBC">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Test Date</label>
+                            <input type="date" name="test_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Lab Name</label>
+                            <input type="text" name="lab_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ABC Diagnostic Lab">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Test Type</label>
+                            <input type="text" name="test_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Complete Blood Count, Lipid Profile, etc.">
+                        </div>
+                    `;
+                    break;
+                case 'record':
+                    title.textContent = 'Upload Medical Record';
+                    formFields.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Discharge Summary, Consultation Report">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Record Date</label>
+                            <input type="date" name="record_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Record Type</label>
+                            <select name="record_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="external_record">General Medical Record</option>
+                                <option value="discharge_summary">Discharge Summary</option>
+                                <option value="consultation_report">Consultation Report</option>
+                                <option value="imaging_report">Imaging Report</option>
+                                <option value="pathology_report">Pathology Report</option>
+                                <option value="other">Other Medical Record</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Source Name</label>
+                            <input type="text" name="source_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Hospital/Clinic name">
+</div>
+                    `;
+                    break;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('upload-form').reset();
+        }
+
+        // Handle form submission
+        document.getElementById('upload-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const fileInput = document.getElementById('file-input');
+
+            if (!fileInput.files[0]) {
+                alert('Please select a file to upload');
+                return;
+            }
+
+            formData.append('file', fileInput.files[0]);
+
+            const jwtToken = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+
+            try {
+                const response = await fetchWithAuth(`/api/patient/upload/${currentUploadType}/`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('File uploaded successfully!');
+                    closeUploadModal();
+                    loadDashboardData();
+                    loadRecentRecords();
+                } else {
+                    alert('Upload failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Upload failed: ' + error.message);
+            }
+        });
+
+        // Quick action functions
+        function viewRecords() {
+            window.location.href = '/records/';
+        }
+
+        function downloadRecords() {
+            alert('Download feature coming soon!');
+        }
+
+        function shareRecords() {
+            alert('Share feature coming soon!');
+        }
+
+        function viewAllRecords() {
+            window.location.href = '/records/';
+        }
+
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+
+</html>

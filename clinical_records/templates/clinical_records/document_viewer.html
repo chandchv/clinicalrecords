@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Document Viewer - {{ document.original_filename }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'clinical_records/css/document_viewer.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="document-viewer-container">
+    <!-- Viewer Header -->
+    <div class="viewer-header">
+        <div class="document-info">
+            <h1 class="document-title">{{ document.original_filename }}</h1>
+            <div class="document-meta">
+                <span class="patient-name">{{ metadata.clinical_info.patient_name }}</span>
+                <span class="record-title">{{ metadata.clinical_info.record_title }}</span>
+                <span class="file-size">{{ metadata.basic_info.file_size_formatted }}</span>
+            </div>
+        </div>
+        
+        <div class="viewer-controls">
+            <div class="zoom-controls">
+                <button type="button" class="btn btn-icon" id="zoom-out" title="Zoom Out (Ctrl+-)">
+                    <i class="icon-zoom-out"></i>
+                </button>
+                <select id="zoom-select" class="zoom-select">
+                    <option value="fit_width">Fit Width</option>
+                    <option value="fit_page">Fit Page</option>
+                    <option value="25">25%</option>
+                    <option value="50">50%</option>
+                    <option value="75">75%</option>
+                    <option value="100">100%</option>
+                    <option value="125">125%</option>
+                    <option value="150">150%</option>
+                    <option value="200">200%</option>
+                </select>
+                <button type="button" class="btn btn-icon" id="zoom-in" title="Zoom In (Ctrl++)">
+                    <i class="icon-zoom-in"></i>
+                </button>
+            </div>
+            
+            <div class="view-controls">
+                {% if viewer_config.supports_rotation %}
+                <button type="button" class="btn btn-icon" id="rotate-left" title="Rotate Left (Ctrl+L)">
+                    <i class="icon-rotate-left"></i>
+                </button>
+                <button type="button" class="btn btn-icon" id="rotate-right" title="Rotate Right (Ctrl+R)">
+                    <i class="icon-rotate-right"></i>
+                </button>
+                {% endif %}
+                
+                {% if supports_search %}
+                <button type="button" class="btn btn-icon" id="search-toggle" title="Search (Ctrl+F)">
+                    <i class="icon-search"></i>
+                </button>
+                {% endif %}
+                
+                <button type="button" class="btn btn-icon" id="sidebar-toggle" title="Toggle Sidebar (Ctrl+S)">
+                    <i class="icon-sidebar"></i>
+                </button>
+                
+                <button type="button" class="btn btn-icon" id="fullscreen-toggle" title="Fullscreen (F11)">
+                    <i class="icon-fullscreen"></i>
+                </button>
+            </div>
+            
+            <div class="action-controls">
+                <button type="button" class="btn btn-secondary" id="download-btn">
+                    <i class="icon-download"></i>
+                    Download
+                </button>
+                
+                {% if viewer_config.print_enabled %}
+                <button type="button" class="btn btn-secondary" id="print-btn">
+                    <i class="icon-print"></i>
+                    Print
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    {% if supports_search %}
+    <div class="search-bar" id="search-bar" style="display: none;">
+        <div class="search-input-container">
+            <input type="text" id="search-input" placeholder="Search in document..." class="search-input">
+            <button type="button" class="btn btn-icon" id="search-prev" title="Previous Match">
+                <i class="icon-chevron-up"></i>
+            </button>
+            <button type="button" class="btn btn-icon" id="search-next" title="Next Match">
+                <i class="icon-chevron-down"></i>
+            </button>
+            <span class="search-results" id="search-results">0 of 0</span>
+            <button type="button" class="btn btn-icon" id="search-close" title="Close Search">
+                <i class="icon-close"></i>
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Viewer Area -->
+    <div class="viewer-main">
+        <!-- Document Display Area -->
+        <div class="document-display" id="document-display">
+            <div class="document-container" id="document-container">
+                <!-- Document content will be loaded here -->
+                <div class="loading-indicator" id="loading-indicator">
+                    <div class="spinner"></div>
+                    <p>Loading document...</p>
+                </div>
+                
+                <!-- Error display -->
+                <div class="error-display" id="error-display" style="display: none;">
+                    <div class="error-icon">⚠️</div>
+                    <h3>Failed to load document</h3>
+                    <p id="error-message">An error occurred while loading the document.</p>
+                    <button type="button" class="btn btn-primary" id="retry-load">Retry</button>
+                </div>
+                
+                <!-- Document viewer will be inserted here -->
+                <div id="document-viewer-content"></div>
+            </div>
+        </div>
+
+        <!-- Metadata Sidebar -->
+        <div class="metadata-sidebar" id="metadata-sidebar">
+            <div class="sidebar-header">
+                <h3>Document Information</h3>
+                <button type="button" class="btn btn-icon sidebar-close" id="sidebar-close">
+                    <i class="icon-close"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- Basic Information -->
+                <div class="metadata-section">
+                    <h4>Basic Information</h4>
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <label>Filename:</label>
+                            <span>{{ metadata.basic_info.filename }}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <label>File Size:</label>
+                            <span>{{ metadata.basic_info.file_size_formatted }}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <label>Content Type:</label>
+                            <span>{{ metadata.basic_info.content_type }}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <label>Uploaded:</label>
+                            <span>{{ metadata.basic_info.created_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <label>Uploaded By:</label>
+                            <span>{{ metadata.basic_info.uploaded_by }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clinical Information -->
+                <div class="metadata-section">
+                    <h4>Clinical Information</h4>
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <label>Patient:</label>
+                            <span>{{ metadata.clinical_info.patient_name }}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <label>Record:</label>
+                            <span>{{ metadata.clinical_info.record_title }}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <label>Record Type:</label>
+                            <span>{{ metadata.clinical_info.record_type|title }}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <label>Clinic:</label>
+                            <span>{{ metadata.clinical_info.clinic_name }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Information -->
+                <div class="metadata-section">
+                    <h4>Processing Information</h4>
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <label>Status:</label>
+                            <span class="status-badge status-{{ metadata.processing_info.processing_status }}">
+                                {{ metadata.processing_info.processing_status|title }}
+                            </span>
+                        </div>
+                        {% if metadata.processing_info.ocr_confidence %}
+                        <div class="metadata-item">
+                            <label>OCR Confidence:</label>
+                            <span>{{ metadata.processing_info.ocr_confidence|floatformat:1 }}%</span>
+                        </div>
+                        {% endif %}
+                        {% if metadata.processing_info.requires_manual_review %}
+                        <div class="metadata-item">
+                            <label>Manual Review:</label>
+                            <span class="review-required">Required</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- DICOM Information -->
+                {% if metadata.dicom_info %}
+                <div class="metadata-section">
+                    <h4>DICOM Information</h4>
+                    <div class="metadata-grid">
+                        {% if metadata.dicom_info.patient %}
+                        <div class="metadata-item">
+                            <label>Patient ID:</label>
+                            <span>{{ metadata.dicom_info.patient.id }}</span>
+                        </div>
+                        {% endif %}
+                        {% if metadata.dicom_info.study %}
+                        <div class="metadata-item">
+                            <label>Study Date:</label>
+                            <span>{{ metadata.dicom_info.study.date }}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <label>Study Description:</label>
+                            <span>{{ metadata.dicom_info.study.description }}</span>
+                        </div>
+                        {% endif %}
+                        {% if metadata.dicom_info.series %}
+                        <div class="metadata-item">
+                            <label>Modality:</label>
+                            <span>{{ metadata.dicom_info.series.modality }}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <label>Body Part:</label>
+                            <span>{{ metadata.dicom_info.series.body_part }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Structured Data -->
+                {% if metadata.structured_data %}
+                <div class="metadata-section">
+                    <h4>Extracted Data</h4>
+                    <div class="structured-data-container">
+                        {% if metadata.structured_data.lab_results %}
+                        <div class="structured-data-section">
+                            <h5>Lab Results</h5>
+                            <div class="lab-results">
+                                {% for test in metadata.structured_data.lab_results.tests %}
+                                <div class="lab-test">
+                                    <span class="test-name">{{ test.name }}</span>
+                                    <span class="test-value">{{ test.value }}</span>
+                                    {% if test.reference_range %}
+                                    <span class="test-range">({{ test.reference_range }})</span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if metadata.structured_data.prescription %}
+                        <div class="structured-data-section">
+                            <h5>Prescription</h5>
+                            <div class="prescription-data">
+                                {% for medication in metadata.structured_data.prescription.medications %}
+                                <div class="medication">
+                                    <span class="med-name">{{ medication.name }}</span>
+                                    {% if medication.dosage %}
+                                    <span class="med-dosage">{{ medication.dosage }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- OCR Text -->
+                {% if has_ocr %}
+                <div class="metadata-section">
+                    <h4>Extracted Text</h4>
+                    <div class="ocr-text-container">
+                        <div class="ocr-controls">
+                            <button type="button" class="btn btn-small" id="toggle-ocr-overlay">
+                                <i class="icon-eye"></i>
+                                Toggle Overlay
+                            </button>
+                            <button type="button" class="btn btn-small" id="copy-ocr-text">
+                                <i class="icon-copy"></i>
+                                Copy Text
+                            </button>
+                        </div>
+                        <div class="ocr-text" id="ocr-text-display">
+                            <!-- OCR text will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Viewer Configuration -->
+<script type="application/json" id="viewer-config">
+{{ viewer_data|safe }}
+</script>
+
+<!-- Annotation Modal -->
+{% if supports_annotations %}
+<div class="modal" id="annotation-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add Annotation</h3>
+            <button type="button" class="btn-close" id="close-annotation">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="annotation-form">
+                <div class="form-group">
+                    <label for="annotation-type">Type:</label>
+                    <select id="annotation-type" class="form-control">
+                        <option value="highlight">Highlight</option>
+                        <option value="note">Note</option>
+                        <option value="arrow">Arrow</option>
+                        <option value="rectangle">Rectangle</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="annotation-content">Content:</label>
+                    <textarea id="annotation-content" class="form-control" rows="3" placeholder="Enter annotation text..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="annotation-color">Color:</label>
+                    <input type="color" id="annotation-color" class="form-control" value="#ffff00">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="cancel-annotation">Cancel</button>
+            <button type="button" class="btn btn-primary" id="save-annotation">Save</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Error Modal -->
+<div class="modal" id="error-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Error</h3>
+            <button type="button" class="btn-close" id="close-error">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="error-message" id="modal-error-message"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="close-error-btn">OK</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- PDF.js for PDF viewing -->
+{% if viewer_config.format == 'pdf' %}
+<script src="{% static 'clinical_records/js/pdf.min.js' %}"></script>
+{% endif %}
+
+<!-- DICOM viewer for medical images -->
+{% if viewer_config.format == 'dicom' %}
+<script src="{% static 'clinical_records/js/cornerstone.min.js' %}"></script>
+<script src="{% static 'clinical_records/js/cornerstoneWADOImageLoader.min.js' %}"></script>
+{% endif %}
+
+<!-- Main document viewer JavaScript -->
+<script src="{% static 'clinical_records/js/document_viewer.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,13 @@
+{
+  "welcome": "Bienvenido",
+  "logout": "Cerrar sesión",
+  "dashboard": "Panel de control",
+  "records": "Registros",
+  "analytics": "Análisis",
+  "upload": "Subir",
+  "admin": "Administrador",
+  "confirm_logout": "Confirmar cierre de sesión",
+  "logout_message": "¿Está seguro de que desea cerrar sesión?",
+  "yes_logout": "Sí, cerrar sesión",
+  "cancel": "Cancelar"
+}

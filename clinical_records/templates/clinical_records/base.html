@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Clinical Records Service{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #f4f4f4; padding: 10px; margin-bottom: 20px; }
+        .content { margin: 20px 0; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Clinical Records Service</h1>
+        {% if user.is_authenticated %}
+            <p>Welcome, {{ user.username }}! <a href="{% url 'logout' %}">Logout</a></p>
+        {% endif %}
+    </div>
+    
+    <div class="content">
+        {% block content %}
+        {% endblock %}
+    </div>
+    
+    <div class="footer">
+        <p>&copy; 2024 Clinical Records Service</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,134 @@
+/* Font Awesome 6.4.0 */
+@font-face {
+  font-family: "Font Awesome 6 Free";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("../webfonts/fa-solid-900.woff2") format("woff2"),
+       url("../webfonts/fa-solid-900.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Font Awesome 6 Free";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../webfonts/fa-regular-400.woff2") format("woff2"),
+       url("../webfonts/fa-regular-400.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Font Awesome 6 Brands";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../webfonts/fa-brands-400.woff2") format("woff2"),
+       url("../webfonts/fa-brands-400.ttf") format("truetype");
+}
+
+.fa,
+.fas {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+}
+
+.far {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 400;
+}
+
+.fab {
+  font-family: "Font Awesome 6 Brands";
+  font-weight: 400;
+}
+
+/* Common icons */
+.fa-user::before { content: "\f007"; }
+.fa-sign-out-alt::before { content: "\f2f5"; }
+.fa-home::before { content: "\f015"; }
+.fa-dashboard::before { content: "\f3fd"; }
+.fa-file-medical::before { content: "\f477"; }
+.fa-chart-line::before { content: "\f201"; }
+.fa-upload::before { content: "\f093"; }
+.fa-cog::before { content: "\f013"; }
+.fa-search::before { content: "\f002"; }
+.fa-plus::before { content: "\f067"; }
+.fa-edit::before { content: "\f044"; }
+.fa-trash::before { content: "\f1f8"; }
+.fa-eye::before { content: "\f06e"; }
+.fa-download::before { content: "\f019"; }
+.fa-share::before { content: "\f064"; }
+.fa-lock::before { content: "\f023"; }
+.fa-unlock::before { content: "\f09c"; }
+.fa-check::before { content: "\f00c"; }
+.fa-times::before { content: "\f00d"; }
+.fa-exclamation-triangle::before { content: "\f071"; }
+.fa-info-circle::before { content: "\f05a"; }
+.fa-calendar::before { content: "\f133"; }
+.fa-clock::before { content: "\f017"; }
+.fa-user-md::before { content: "\f82c"; }
+.fa-user-injured::before { content: "\f728"; }
+.fa-hospital::before { content: "\f0f8"; }
+.fa-stethoscope::before { content: "\f0f1"; }
+.fa-pills::before { content: "\f484"; }
+.fa-heartbeat::before { content: "\f21e"; }
+.fa-thermometer-half::before { content: "\f2c9"; }
+.fa-weight::before { content: "\f496"; }
+.fa-ruler::before { content: "\f545"; }
+.fa-tint::before { content: "\f043"; }
+.fa-heart::before { content: "\f004"; }
+.fa-lungs::before { content: "\f604"; }
+.fa-brain::before { content: "\f5dc"; }
+.fa-tooth::before { content: "\f5c9"; }
+.fa-eye::before { content: "\f06e"; }
+.fa-ear::before { content: "\f5f0"; }
+.fa-hand-holding-medical::before { content: "\f95c"; }
+.fa-shield-virus::before { content: "\f96c"; }
+.fa-virus::before { content: "\f974"; }
+.fa-bacteria::before { content: "\f959"; }
+.fa-dna::before { content: "\f471"; }
+.fa-microscope::before { content: "\f610"; }
+.fa-flask::before { content: "\f0c3"; }
+.fa-prescription-bottle::before { content: "\f485"; }
+.fa-syringe::before { content: "\f48e"; }
+.fa-band-aid::before { content: "\f462"; }
+.fa-ambulance::before { content: "\f0f9"; }
+.fa-helicopter::before { content: "\f533"; }
+.fa-plane::before { content: "\f072"; }
+.fa-car::before { content: "\f1b9"; }
+.fa-walking::before { content: "\f554"; }
+.fa-wheelchair::before { content: "\f193"; }
+.fa-procedures::before { content: "\f487"; }
+.fa-user-nurse::before { content: "\f82f"; }
+.fa-user-doctor::before { content: "\f82c"; }
+.fa-user-graduate::before { content: "\f501"; }
+.fa-user-tie::before { content: "\f508"; }
+.fa-user-shield::before { content: "\f505"; }
+.fa-user-secret::before { content: "\f21b"; }
+.fa-user-check::before { content: "\f4fc"; }
+.fa-user-times::before { content: "\f235"; }
+.fa-user-plus::before { content: "\f234"; }
+.fa-user-minus::before { content: "\f503"; }
+.fa-user-edit::before { content: "\f4ff"; }
+.fa-user-cog::before { content: "\f4fe"; }
+.fa-user-clock::before { content: "\f4fd"; }
+.fa-user-lock::before { content: "\f502"; }
+.fa-user-unlock::before { content: "\f506"; }
+.fa-user-tag::before { content: "\f507"; }
+.fa-user-slash::before { content: "\f506"; }
+.fa-user-graduate::before { content: "\f501"; }
+.fa-user-friends::before { content: "\f500"; }
+.fa-users::before { content: "\f0c0"; }
+.fa-user-friends::before { content: "\f500"; }
+.fa-user-plus::before { content: "\f234"; }
+.fa-user-minus::before { content: "\f503"; }
+.fa-user-edit::before { content: "\f4ff"; }
+.fa-user-cog::before { content: "\f4fe"; }
+.fa-user-clock::before { content: "\f4fd"; }
+.fa-user-lock::before { content: "\f502"; }
+.fa-user-unlock::before { content: "\f506"; }
+.fa-user-tag::before { content: "\f507"; }
+.fa-user-slash::before { content: "\f506"; }
+.fa-user-graduate::before { content: "\f501"; }
+.fa-user-friends::before { content: "\f500"; }
+.fa-users::before { content: "\f0c0"; }

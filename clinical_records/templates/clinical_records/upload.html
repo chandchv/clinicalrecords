@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Document Upload{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'clinical_records/css/upload.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <div class="upload-header">
+        <h1>Upload Documents</h1>
+        {% if record %}
+        <div class="record-info">
+            <h3>{{ record.title }}</h3>
+            <p><strong>Patient:</strong> {{ record.patient_name }}</p>
+            <p><strong>Type:</strong> {{ record.record_type|title }}</p>
+            <p><strong>Created:</strong> {{ record.created_at|date:"M d, Y" }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error">
+        <i class="icon-error"></i>
+        {{ error }}
+    </div>
+    {% else %}
+    
+    <!-- Upload Configuration -->
+    <div class="upload-config" style="display: none;">
+        <script type="application/json" id="upload-config">
+        {
+            "recordId": "{{ record.id|default:'' }}",
+            "maxFileSize": {{ max_file_size }},
+            "allowedExtensions": {{ allowed_extensions|safe }},
+            "chunkSize": {{ config.chunk_size }},
+            "maxConcurrentUploads": {{ config.max_concurrent_uploads }},
+            "autoProcess": {{ config.auto_process|yesno:"true,false" }},
+            "csrfToken": "{{ csrf_token }}"
+        }
+        </script>
+    </div>
+
+    <!-- Upload Area -->
+    <div class="upload-area" id="upload-area">
+        <div class="upload-drop-zone" id="drop-zone">
+            <div class="drop-zone-content">
+                <i class="icon-upload"></i>
+                <h3>Drag and drop files here</h3>
+                <p>or <button type="button" class="btn-link" id="browse-files">browse files</button></p>
+                <div class="upload-info">
+                    <p><strong>Maximum file size:</strong> {{ max_file_size|filesizeformat }}</p>
+                    <p><strong>Allowed types:</strong> {{ allowed_extensions|join:", " }}</p>
+                </div>
+            </div>
+            <input type="file" id="file-input" multiple accept="{{ allowed_extensions|join:',' }}" style="display: none;">
+        </div>
+
+        <!-- Mobile Camera Button -->
+        <div class="mobile-camera-section">
+            <button type="button" class="btn btn-camera" id="camera-capture">
+                <i class="icon-camera"></i>
+                Take Photo
+            </button>
+        </div>
+    </div>
+
+    <!-- Upload Queue -->
+    <div class="upload-queue" id="upload-queue" style="display: none;">
+        <div class="queue-header">
+            <h3>Upload Queue</h3>
+            <div class="queue-controls">
+                <button type="button" class="btn btn-secondary" id="clear-completed">Clear Completed</button>
+                <button type="button" class="btn btn-secondary" id="cancel-all">Cancel All</button>
+            </div>
+        </div>
+        <div class="queue-list" id="queue-list">
+            <!-- Upload items will be added here dynamically -->
+        </div>
+    </div>
+
+    <!-- Upload Statistics -->
+    <div class="upload-stats" id="upload-stats" style="display: none;">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-value" id="total-uploads">0</span>
+                <span class="stat-label">Total Uploads</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="successful-uploads">0</span>
+                <span class="stat-label">Successful</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="failed-uploads">0</span>
+                <span class="stat-label">Failed</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="processing-uploads">0</span>
+                <span class="stat-label">Processing</span>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<!-- Upload Item Template -->
+<template id="upload-item-template">
+    <div class="upload-item" data-upload-id="">
+        <div class="upload-item-info">
+            <div class="file-icon">
+                <i class="icon-file"></i>
+            </div>
+            <div class="file-details">
+                <div class="file-name"></div>
+                <div class="file-size"></div>
+                <div class="file-status"></div>
+            </div>
+        </div>
+        <div class="upload-progress">
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div class="progress-text">0%</div>
+        </div>
+        <div class="upload-actions">
+            <button type="button" class="btn btn-small btn-cancel" title="Cancel Upload">
+                <i class="icon-cancel"></i>
+            </button>
+            <button type="button" class="btn btn-small btn-retry" title="Retry Upload" style="display: none;">
+                <i class="icon-retry"></i>
+            </button>
+            <button type="button" class="btn btn-small btn-remove" title="Remove from Queue" style="display: none;">
+                <i class="icon-remove"></i>
+            </button>
+        </div>
+    </div>
+</template>
+
+<!-- Camera Capture Modal -->
+<div class="modal" id="camera-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Capture Document</h3>
+            <button type="button" class="btn-close" id="close-camera">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="camera-container">
+                <video id="camera-video" autoplay playsinline></video>
+                <canvas id="camera-canvas" style="display: none;"></canvas>
+                <div class="camera-overlay">
+                    <div class="capture-frame"></div>
+                </div>
+            </div>
+            <div class="camera-controls">
+                <button type="button" class="btn btn-primary" id="capture-photo">
+                    <i class="icon-camera"></i>
+                    Capture
+                </button>
+                <button type="button" class="btn btn-secondary" id="switch-camera" style="display: none;">
+                    <i class="icon-switch"></i>
+                    Switch Camera
+                </button>
+            </div>
+            <div class="captured-preview" id="captured-preview" style="display: none;">
+                <img id="preview-image" alt="Captured image">
+                <div class="preview-controls">
+                    <button type="button" class="btn btn-secondary" id="retake-photo">
+                        <i class="icon-retry"></i>
+                        Retake
+                    </button>
+                    <button type="button" class="btn btn-primary" id="upload-photo">
+                        <i class="icon-upload"></i>
+                        Upload
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal" id="error-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Upload Error</h3>
+            <button type="button" class="btn-close" id="close-error">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="error-message" id="error-message"></div>
+            <div class="error-details" id="error-details" style="display: none;"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="close-error-btn">OK</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'clinical_records/js/upload.js' %}"></script>
+{% endblock %}

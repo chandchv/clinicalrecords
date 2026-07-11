@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Records - Clinical Records</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .record-card {
+            transition: all 0.3s ease;
+        }
+
+        .record-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-active {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <button onclick="goBack()"
+                        class="mr-4 p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors">
+                        <i class="fas fa-arrow-left text-white"></i>
+                    </button>
+                    <div class="h-10 w-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-file-medical text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Medical Records</h1>
+                        <p class="text-blue-100">View and manage your medical documents</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="uploadNew()"
+                        class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Upload New
+                    </button>
+                    <button onclick="syncRecords()" id="sync-btn"
+                        class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-colors text-white">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Sync Records
+                    </button>
+                    <div class="h-10 w-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Filters and Search -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <!-- Search -->
+                <div class="flex-1 max-w-md">
+                    <div class="relative">
+                        <input type="text" id="search-input" placeholder="Search records..."
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="filterRecords('all')"
+                        class="filter-btn filter-active px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                        All Records
+                    </button>
+                    <button onclick="filterRecords('prescription')"
+                        class="filter-btn px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                        Prescriptions
+                    </button>
+                    <button onclick="filterRecords('lab_report')"
+                        class="filter-btn px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                        Lab Reports
+                    </button>
+                    <button onclick="filterRecords('external_record')"
+                        class="filter-btn px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                        Medical Records
+                    </button>
+                </div>
+
+                <!-- Sort -->
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-gray-600">Sort by:</label>
+                    <select id="sort-select"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="created_at">Date Added</option>
+                        <option value="record_date">Record Date</option>
+                        <option value="title">Title</option>
+                        <option value="record_type">Type</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Records Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="records-grid">
+            <!-- Records will be loaded here -->
+            <div class="col-span-full text-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading records...</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-8 flex justify-center" id="pagination">
+            <!-- Pagination will be loaded here -->
+        </div>
+    </main>
+
+    <!-- Record Detail Modal -->
+    <div id="record-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="record-title" class="text-lg font-semibold text-gray-900">Record Details</h3>
+                        <button onclick="closeRecordModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div id="record-details" class="space-y-4">
+                        <!-- Record details will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Footer -->
+        <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
+            <button id="seal-btn" onclick="toggleSealRecord()"
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                <i class="fas fa-lock mr-2"></i> Seal Record
+            </button>
+            <button onclick="shareRecord()"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-share-alt mr-2"></i> Share
+            </button>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[60]">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Share Record</h3>
+                        <button onclick="closeShareModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-600 mb-4">Use this secure link to share this record with doctors or other
+                        clinics.</p>
+
+                    <div class="bg-gray-100 p-3 rounded-lg flex items-center justify-between mb-4">
+                        <code id="share-link" class="text-sm text-blue-600 truncate mr-2">Generating...</code>
+                        <button onclick="copyShareLink()" class="text-gray-500 hover:text-blue-600">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+
+                    <p class="text-xs text-gray-500">This link will expire in 7 days.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFilter = 'all';
+        let currentSort = 'created_at';
+        let currentPage = 1;
+        let allRecords = [];
+        let filteredRecords = [];
+
+        // Load records on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check for token in URL parameters and save to localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {
+                localStorage.setItem('jwt_token', token);
+                sessionStorage.setItem('jwt_token', token);
+                // Clear token from URL to be clean, but keep other params if any? 
+                // Actually usually sso login redirects to this page with just token if we look at sso_views.py it redirects to next_url without token unless we change it.
+                // Wait, sso_views.py redirects to next_url, it DOES NOT append the token to next_url?
+                // If sso_views.py sets session, then we don't need token in localStorage for session auth, BUT the fetch calls below use Authorization: Bearer header.
+                // If sso_views.py only does session login, the API views dashboard_stats etc need to support session auth OR the templates need to grab token from somewhere.
+                // The API views confirm they use Flexible Check.
+                // However, the Javascript explicitly looks for 'jwt_token' in localStorage.
+                // So we need to put it there.
+                // We need to verify if sso_views passes token in URL.
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            loadRecords();
+
+            // Setup search
+            document.getElementById('search-input').addEventListener('input', function () {
+                filterRecords(currentFilter);
+            });
+
+            // Setup sort
+            document.getElementById('sort-select').addEventListener('change', function () {
+                currentSort = this.value;
+                sortAndDisplayRecords();
+            });
+        });
+
+        async function fetchWithAuth(url, options = {}) {
+            const jwtToken = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+            const headers = options.headers || {};
+            headers['Content-Type'] = 'application/json';
+            
+            if (jwtToken && jwtToken !== 'null' && jwtToken !== 'undefined') {
+                headers['Authorization'] = `Bearer ${jwtToken}`;
+            }
+            
+            let response = await fetch(url, {
+                ...options,
+                headers: headers
+            });
+            
+            if (!response.ok && (response.status === 401 || response.status === 403) && headers['Authorization']) {
+                console.warn('JWT token invalid or expired. Clearing token and retrying with session...');
+                localStorage.removeItem('jwt_token');
+                sessionStorage.removeItem('jwt_token');
+                
+                const newHeaders = { ...headers };
+                delete newHeaders['Authorization'];
+                
+                response = await fetch(url, {
+                    ...options,
+                    headers: newHeaders
+                });
+            }
+            
+            return response;
+        }
+
+        async function loadRecords() {
+            try {
+                 const response = await fetchWithAuth('/api/patient/external-records/?patient_id={{ patient.rxbackend_patient_id|default:"" }}');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    allRecords = data.results || [];
+                    filteredRecords = [...allRecords];
+                    sortAndDisplayRecords();
+                } else {
+                    showError('Failed to load records');
+                }
+            } catch (error) {
+                console.log('Failed to load records:', error);
+                showError('Failed to load records');
+            }
+        }
+
+        function filterRecords(filter) {
+            currentFilter = filter;
+
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('filter-active');
+            });
+            event.target.classList.add('filter-active');
+
+            // Filter records
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+            filteredRecords = allRecords.filter(record => {
+                const matchesFilter = filter === 'all' || record.record_type === filter;
+                const matchesSearch = record.title.toLowerCase().includes(searchTerm) ||
+                    record.description.toLowerCase().includes(searchTerm);
+                return matchesFilter && matchesSearch;
+            });
+
+            currentPage = 1;
+            sortAndDisplayRecords();
+        }
+
+        function sortAndDisplayRecords() {
+            // Sort records
+            filteredRecords.sort((a, b) => {
+                switch (currentSort) {
+                    case 'title':
+                        return a.title.localeCompare(b.title);
+                    case 'record_type':
+                        return a.record_type.localeCompare(b.record_type);
+                    case 'record_date':
+                        return new Date(b.record_date) - new Date(a.record_date);
+                    case 'created_at':
+                    default:
+                        return new Date(b.created_at) - new Date(a.created_at);
+                }
+            });
+
+            displayRecords();
+        }
+
+        function displayRecords() {
+            const grid = document.getElementById('records-grid');
+
+            if (filteredRecords.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <i class="fas fa-file-medical text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No records found</h3>
+                        <p class="text-gray-600 mb-4">Try adjusting your search or filters</p>
+                        <button onclick="uploadNew()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Upload Your First Record
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            // Pagination
+            const recordsPerPage = 9;
+            const startIndex = (currentPage - 1) * recordsPerPage;
+            const endIndex = startIndex + recordsPerPage;
+            const pageRecords = filteredRecords.slice(startIndex, endIndex);
+
+            grid.innerHTML = pageRecords.map(record => `
+                <div class="record-card bg-white rounded-xl shadow-sm p-6 cursor-pointer" onclick="viewRecord('${record.id}')">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="h-12 w-12 ${getRecordIconColor(record.record_type)} rounded-lg flex items-center justify-center mr-3">
+                                <i class="${getRecordIcon(record.record_type)} text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 truncate">${record.title}</h3>
+                                <p class="text-sm text-gray-500">${formatRecordType(record.record_type)}</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-medium ${getStatusColor(record.status)} rounded-full">
+                            ${record.status.toUpperCase()}
+                        </span>
+                    </div>
+                    
+                    ${record.is_sealed ? '<div class="mb-2"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-lock mr-1"></i> Sealed</span></div>' : ''}
+
+                    
+                    <p class="text-sm text-gray-600 mb-4 line-clamp-2">${record.description || 'No description available'}</p>
+                    
+                    <div class="flex items-center justify-between text-sm text-gray-500">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar mr-1"></i>
+                            <span>${formatDate(record.record_date)}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-file mr-1"></i>
+                            <span>${record.documents_count || 0} file${(record.documents_count || 0) !== 1 ? 's' : ''}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Update pagination
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const recordsPerPage = 9;
+            const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+
+            if (totalPages <= 1) {
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '<div class="flex items-center space-x-2">';
+
+            // Previous button
+            if (currentPage > 1) {
+                paginationHTML += `
+                    <button onclick="changePage(${currentPage - 1})" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                `;
+            }
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    paginationHTML += `
+                        <button class="px-3 py-2 bg-blue-600 text-white rounded-lg">
+                            ${i}
+                        </button>
+                    `;
+                } else {
+                    paginationHTML += `
+                        <button onclick="changePage(${i})" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                            ${i}
+                        </button>
+                    `;
+                }
+            }
+
+            // Next button
+            if (currentPage < totalPages) {
+                paginationHTML += `
+                    <button onclick="changePage(${currentPage + 1})" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                `;
+            }
+
+            paginationHTML += '</div>';
+            document.getElementById('pagination').innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            displayRecords();
+        }
+
+        let currentRecordId = null;
+
+        function viewRecord(recordId) {
+            const record = allRecords.find(r => r.id === recordId);
+            if (!record) return;
+
+            currentRecordId = recordId;
+
+            document.getElementById('record-title').textContent = record.title;
+            // Update Seal Button based on state
+            const sealBtn = document.getElementById('seal-btn');
+            if (record.is_sealed) {
+                sealBtn.innerHTML = '<i class="fas fa-unlock mr-2"></i> Unseal Record';
+            } else {
+                sealBtn.innerHTML = '<i class="fas fa-lock mr-2"></i> Seal Record';
+            }
+
+            document.getElementById('record-details').innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <p class="text-gray-900">${record.description || 'No description available'}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                            <p class="text-gray-900">${formatRecordType(record.record_type)}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <span class="px-2 py-1 text-xs font-medium ${getStatusColor(record.status)} rounded-full">
+                                ${record.status.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Record Date</label>
+                            <p class="text-gray-900">${formatDate(record.record_date)}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Created</label>
+                            <p class="text-gray-900">${formatDate(record.created_at)}</p>
+                        </div>
+                    </div>
+                    
+                    ${record.is_sealed ? '<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg"><i class="fas fa-lock mr-2"></i> This record is sealed and private.</div>' : ''}
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Attached Documents</label>
+                        ${record.documents && record.documents.length > 0 ? `
+                            <ul class="divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden mt-2 bg-gray-50">
+                                ${record.documents.map(doc => {
+                                    const fileExt = doc.file_name ? doc.file_name.split('.').pop() : '';
+                                    let fileIcon = 'fa-file-alt text-gray-500';
+                                    if (fileExt.toLowerCase() === 'pdf') {
+                                        fileIcon = 'fa-file-pdf text-red-500';
+                                    } else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExt.toLowerCase())) {
+                                        fileIcon = 'fa-file-image text-green-500';
+                                    } else if (['doc', 'docx'].includes(fileExt.toLowerCase())) {
+                                        fileIcon = 'fa-file-word text-blue-500';
+                                    }
+                                    return `
+                                        <li class="flex items-center justify-between p-3 hover:bg-gray-100 transition-colors">
+                                            <div class="flex items-center space-x-3 truncate">
+                                                <i class="fas ${fileIcon} text-lg"></i>
+                                                <span class="text-sm font-medium text-gray-900 truncate" title="${doc.title || doc.file_name}">${doc.title || doc.file_name || 'Document'}</span>
+                                            </div>
+                                            <a href="${doc.file_url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center ml-4">
+                                                <i class="fas fa-external-link-alt mr-1"></i> View
+                                            </a>
+                                        </li>
+                                    `;
+                                }).join('')}
+                            </ul>
+                        ` : `
+                            <p class="text-gray-500 text-sm">No files attached</p>
+                        `}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('record-modal').classList.remove('hidden');
+        }
+
+        async function syncRecords() {
+            const btn = document.getElementById('sync-btn');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Syncing...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetchWithAuth('/api/records/sync/', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(data.message);
+                    loadRecords(); // Reload list
+                } else {
+                    const err = await response.json();
+                    alert('Sync failed: ' + (err.error || 'Unknown error'));
+                }
+
+            } catch (e) {
+                console.error(e);
+                alert('Sync failed: Network error');
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
+        async function toggleSealRecord() {
+            if (!currentRecordId) return;
+
+            try {
+                const response = await fetchWithAuth(`/api/records/${currentRecordId}/seal/`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    // Update record in list
+                    const data = await response.json();
+                    const idx = allRecords.findIndex(r => r.id === currentRecordId);
+                    if (idx !== -1) {
+                        allRecords[idx].is_sealed = data.is_sealed;
+                        viewRecord(currentRecordId); // Refresh modal
+                        displayRecords(); // Refresh list background
+                    }
+                } else {
+                    alert('Failed to update record privacy');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error updating record');
+            }
+        }
+
+        async function shareRecord() {
+            if (!currentRecordId) return;
+
+            document.getElementById('share-modal').classList.remove('hidden');
+            document.getElementById('share-link').textContent = 'Generating...';
+
+            try {
+                const response = await fetchWithAuth(`/api/records/${currentRecordId}/share/`, {
+                    method: 'POST',
+                    body: JSON.stringify({ expiry_days: 7 })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const fullUrl = window.location.origin + data.share_url;
+                    document.getElementById('share-link').textContent = fullUrl;
+                } else {
+                    document.getElementById('share-link').textContent = 'Error generating link';
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('share-link').textContent = 'Error generating link';
+            }
+        }
+
+        function closeRecordModal() {
+            document.getElementById('record-modal').classList.add('hidden');
+        }
+
+        function closeShareModal() {
+            document.getElementById('share-modal').classList.add('hidden');
+        }
+
+        function copyShareLink() {
+            const link = document.getElementById('share-link').textContent;
+            if (link && link !== 'Generating...' && link !== 'Error generating link') {
+                navigator.clipboard.writeText(link).then(() => {
+                    alert('Link copied to clipboard!');
+                });
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('records-grid').innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Error</h3>
+                    <p class="text-gray-600">${message}</p>
+                </div>
+            `;
+        }
+
+        // Helper functions
+        function getRecordIcon(type) {
+            switch (type) {
+                case 'prescription': return 'fas fa-prescription-bottle-alt';
+                case 'lab_report': return 'fas fa-vial';
+                case 'imaging_report': return 'fas fa-x-ray';
+                case 'discharge_summary': return 'fas fa-file-medical-alt';
+                default: return 'fas fa-file-medical';
+            }
+        }
+
+        function getRecordIconColor(type) {
+            switch (type) {
+                case 'prescription': return 'bg-blue-500';
+                case 'lab_report': return 'bg-green-500';
+                case 'imaging_report': return 'bg-purple-500';
+                case 'discharge_summary': return 'bg-orange-500';
+                default: return 'bg-gray-500';
+            }
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'active': return 'bg-green-100 text-green-800';
+                case 'pending': return 'bg-yellow-100 text-yellow-800';
+                case 'archived': return 'bg-gray-100 text-gray-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function formatRecordType(type) {
+            return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function uploadNew() {
+            window.location.href = '/api/patient/upload/';
+        }
+
+        function goBack() {
+            window.location.href = '/dashboard/';
+        }
+    </script>
+</body>
+
+</html>

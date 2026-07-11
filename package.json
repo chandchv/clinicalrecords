@@ -1,0 +1,15 @@
+{
+  "name": "clinical-records-service",
+  "version": "1.0.0",
+  "description": "Clinical Records Service with Tailwind CSS",
+  "scripts": {
+    "build": "tailwindcss -i ./clinical_records/static/clinical_records/css/input.css -o ./clinical_records/static/clinical_records/css/tailwind.min.css --minify",
+    "watch": "tailwindcss -i ./clinical_records/static/clinical_records/css/input.css -o ./clinical_records/static/clinical_records/css/tailwind.min.css --watch",
+    "dev": "tailwindcss -i ./clinical_records/static/clinical_records/css/input.css -o ./clinical_records/static/clinical_records/css/tailwind.min.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  }
+}

@@ -1,0 +1,99 @@
+{% extends 'clinical_records/base.html' %}
+
+{% block title %}{{ action }} Clinical Record{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="px-4 py-6 sm:px-0">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">{{ action }} Clinical Record</h1>
+                <p class="mt-1 text-sm text-gray-600">{% if action == 'Create' %}Create a new clinical record{% else %}Update the clinical record details{% endif %}</p>
+            </div>
+            <a href="{% url 'record_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Records
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white shadow rounded-lg">
+        <form method="post" class="space-y-6 p-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700">Title</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.title.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.patient_name.id_for_label }}" class="block text-sm font-medium text-gray-700">Patient Name</label>
+                    {{ form.patient_name }}
+                    {% if form.patient_name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.patient_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.record_type.id_for_label }}" class="block text-sm font-medium text-gray-700">Record Type</label>
+                    {{ form.record_type }}
+                    {% if form.record_type.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.record_type.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700">Status</label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.status.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.priority.id_for_label }}" class="block text-sm font-medium text-gray-700">Priority</label>
+                    {{ form.priority }}
+                    {% if form.priority.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.priority.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <a href="{% url 'record_list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                    {% if action == 'Create' %}
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create Record
+                    {% else %}
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    Update Record
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

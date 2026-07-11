@@ -1,0 +1,599 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Django-Q Monitoring Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .metric-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .metric-label {
+        color: #7f8c8d;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+    
+    .status-healthy {
+        color: #27ae60;
+    }
+    
+    .status-warning {
+        color: #f39c12;
+    }
+    
+    .status-error {
+        color: #e74c3c;
+    }
+    
+    .worker-process {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .control-button {
+        margin: 5px;
+    }
+    
+    .log-entry {
+        font-family: monospace;
+        font-size: 0.9em;
+        padding: 5px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .chart-container {
+        height: 300px;
+        margin: 20px 0;
+    }
+    
+    .refresh-indicator {
+        display: none;
+        color: #007bff;
+    }
+    
+    .alert-box {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+    
+    .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+    
+    .alert-warning {
+        color: #856404;
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+    }
+    
+    .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>Django-Q Monitoring Dashboard</h1>
+            <p class="text-muted">Monitor and manage Django-Q workers and job processing</p>
+            
+            <!-- Refresh Controls -->
+            <div class="mb-3">
+                <button id="refresh-btn" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button id="auto-refresh-btn" class="btn btn-outline-secondary">
+                    <i class="fas fa-play"></i> Auto Refresh (30s)
+                </button>
+                <span class="refresh-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Refreshing...
+                </span>
+            </div>
+            
+            <!-- Alert Messages -->
+            <div id="alert-container"></div>
+        </div>
+    </div>
+    
+    <!-- Status Overview -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div id="health-status" class="metric-value">Loading...</div>
+                <div class="metric-label">Health Status</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div id="worker-count" class="metric-value">-</div>
+                <div class="metric-label">Active Workers</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div id="queue-length" class="metric-value">-</div>
+                <div class="metric-label">Queue Length</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div id="failure-rate" class="metric-value">-</div>
+                <div class="metric-label">Failure Rate (1h)</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Control Panel -->
+    <div class="row">
+        <div class="col-12">
+            <div class="metric-card">
+                <h3>Worker Control</h3>
+                <button id="restart-workers-btn" class="btn btn-warning control-button">
+                    <i class="fas fa-redo"></i> Restart Workers
+                </button>
+                <button id="clear-failed-btn" class="btn btn-danger control-button">
+                    <i class="fas fa-trash"></i> Clear Failed Tasks
+                </button>
+                <button id="retry-failed-btn" class="btn btn-info control-button">
+                    <i class="fas fa-retry"></i> Retry Failed Tasks
+                </button>
+                <div class="mt-3">
+                    <label for="scale-workers">Scale Workers:</label>
+                    <input type="number" id="scale-workers" min="1" max="20" value="4" class="form-control" style="width: 100px; display: inline-block;">
+                    <button id="scale-workers-btn" class="btn btn-secondary control-button">
+                        <i class="fas fa-expand-arrows-alt"></i> Scale
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detailed Information -->
+    <div class="row">
+        <!-- Queue Information -->
+        <div class="col-md-6">
+            <div class="metric-card">
+                <h3>Queue Information</h3>
+                <div id="queue-info">Loading...</div>
+            </div>
+        </div>
+        
+        <!-- Task Statistics -->
+        <div class="col-md-6">
+            <div class="metric-card">
+                <h3>Task Statistics</h3>
+                <div id="task-stats">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Worker Processes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="metric-card">
+                <h3>Worker Processes</h3>
+                <div id="worker-processes">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Health Issues and Warnings -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="metric-card">
+                <h3>Health Issues</h3>
+                <div id="health-issues">No issues detected</div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="metric-card">
+                <h3>Warnings</h3>
+                <div id="health-warnings">No warnings</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Task Performance Chart -->
+    <div class="row">
+        <div class="col-12">
+            <div class="metric-card">
+                <h3>Task Performance</h3>
+                <div class="chart-container">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'clinical_records/js/chart.min.js' %}"></script>
+<script>
+class DjangoQDashboard {
+    constructor() {
+        this.autoRefreshInterval = null;
+        this.performanceChart = null;
+        this.performanceData = [];
+        
+        this.initializeEventListeners();
+        this.initializeChart();
+        this.refreshData();
+    }
+    
+    initializeEventListeners() {
+        document.getElementById('refresh-btn').addEventListener('click', () => {
+            this.refreshData();
+        });
+        
+        document.getElementById('auto-refresh-btn').addEventListener('click', () => {
+            this.toggleAutoRefresh();
+        });
+        
+        document.getElementById('restart-workers-btn').addEventListener('click', () => {
+            this.controlWorkers('restart');
+        });
+        
+        document.getElementById('clear-failed-btn').addEventListener('click', () => {
+            this.controlWorkers('clear_failed');
+        });
+        
+        document.getElementById('retry-failed-btn').addEventListener('click', () => {
+            this.controlWorkers('retry_failed');
+        });
+        
+        document.getElementById('scale-workers-btn').addEventListener('click', () => {
+            const workers = document.getElementById('scale-workers').value;
+            this.controlWorkers('scale', { workers: parseInt(workers) });
+        });
+    }
+    
+    initializeChart() {
+        const ctx = document.getElementById('performance-chart').getContext('2d');
+        this.performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Queue Length',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Failed Tasks',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Processing Tasks',
+                        data: [],
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    async refreshData() {
+        this.showRefreshIndicator(true);
+        
+        try {
+            // Fetch status and health data
+            const [statusResponse, healthResponse] = await Promise.all([
+                fetch('/clinical_records/api/django-q/status/'),
+                fetch('/clinical_records/api/django-q/health/')
+            ]);
+            
+            const status = await statusResponse.json();
+            const health = await healthResponse.json();
+            
+            this.updateStatusDisplay(status, health);
+            this.updateChart(status);
+            
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+            this.showAlert('Error refreshing data: ' + error.message, 'danger');
+        } finally {
+            this.showRefreshIndicator(false);
+        }
+    }
+    
+    updateStatusDisplay(status, health) {
+        // Update health status
+        const healthElement = document.getElementById('health-status');
+        const healthText = health.healthy ? 'HEALTHY' : 'UNHEALTHY';
+        const healthClass = health.healthy ? 'status-healthy' : 'status-error';
+        healthElement.textContent = healthText;
+        healthElement.className = `metric-value ${healthClass}`;
+        
+        // Update worker count
+        const workerCount = status.worker_processes ? status.worker_processes.length : 0;
+        document.getElementById('worker-count').textContent = workerCount;
+        
+        // Update queue length
+        const queueLength = status.queue_info ? status.queue_info.queue_length : 0;
+        document.getElementById('queue-length').textContent = queueLength;
+        
+        // Update failure rate
+        const failureRate = status.task_statistics && status.task_statistics.last_hour 
+            ? status.task_statistics.last_hour.failure_rate.toFixed(1) + '%' 
+            : '0%';
+        document.getElementById('failure-rate').textContent = failureRate;
+        
+        // Update queue information
+        this.updateQueueInfo(status.queue_info);
+        
+        // Update task statistics
+        this.updateTaskStats(status.task_statistics);
+        
+        // Update worker processes
+        this.updateWorkerProcesses(status.worker_processes);
+        
+        // Update health issues and warnings
+        this.updateHealthIssues(health.issues, health.warnings);
+    }
+    
+    updateQueueInfo(queueInfo) {
+        if (!queueInfo) {
+            document.getElementById('queue-info').innerHTML = '<p>No queue information available</p>';
+            return;
+        }
+        
+        const html = `
+            <div class="row">
+                <div class="col-6">
+                    <strong>Pending:</strong> ${queueInfo.queue_length || 0}
+                </div>
+                <div class="col-6">
+                    <strong>Processing:</strong> ${queueInfo.processing_length || 0}
+                </div>
+                <div class="col-6">
+                    <strong>Failed:</strong> ${queueInfo.failed_length || 0}
+                </div>
+                <div class="col-6">
+                    <strong>Redis Memory:</strong> ${queueInfo.redis_memory_used || 'unknown'}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('queue-info').innerHTML = html;
+    }
+    
+    updateTaskStats(taskStats) {
+        if (!taskStats) {
+            document.getElementById('task-stats').innerHTML = '<p>No task statistics available</p>';
+            return;
+        }
+        
+        const html = `
+            <div class="row">
+                <div class="col-6">
+                    <strong>Total Tasks:</strong> ${taskStats.total_tasks || 0}
+                </div>
+                <div class="col-6">
+                    <strong>Pending:</strong> ${taskStats.pending_tasks || 0}
+                </div>
+                <div class="col-6">
+                    <strong>Running:</strong> ${taskStats.running_tasks || 0}
+                </div>
+                <div class="col-6">
+                    <strong>Avg Duration:</strong> ${(taskStats.average_duration_seconds || 0).toFixed(2)}s
+                </div>
+                <div class="col-12 mt-2">
+                    <strong>Last Hour:</strong> ${taskStats.last_hour ? taskStats.last_hour.total : 0} total, 
+                    ${taskStats.last_hour ? taskStats.last_hour.failed : 0} failed 
+                    (${taskStats.last_hour ? taskStats.last_hour.failure_rate.toFixed(1) : 0}%)
+                </div>
+                <div class="col-12">
+                    <strong>Last 24h:</strong> ${taskStats.last_24_hours ? taskStats.last_24_hours.total : 0} total, 
+                    ${taskStats.last_24_hours ? taskStats.last_24_hours.failed : 0} failed 
+                    (${taskStats.last_24_hours ? taskStats.last_24_hours.failure_rate.toFixed(1) : 0}%)
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('task-stats').innerHTML = html;
+    }
+    
+    updateWorkerProcesses(workers) {
+        if (!workers || workers.length === 0) {
+            document.getElementById('worker-processes').innerHTML = '<p>No worker processes found</p>';
+            return;
+        }
+        
+        let html = '';
+        workers.forEach(worker => {
+            html += `
+                <div class="worker-process">
+                    <strong>PID ${worker.pid}</strong> - ${worker.name}
+                    <br>
+                    <small>
+                        Memory: ${worker.memory_mb.toFixed(1)}MB | 
+                        CPU: ${worker.cpu_percent.toFixed(1)}% | 
+                        Started: ${new Date(worker.created).toLocaleString()}
+                    </small>
+                </div>
+            `;
+        });
+        
+        document.getElementById('worker-processes').innerHTML = html;
+    }
+    
+    updateHealthIssues(issues, warnings) {
+        // Update issues
+        if (issues && issues.length > 0) {
+            let html = '<ul class="list-unstyled">';
+            issues.forEach(issue => {
+                html += `<li class="text-danger"><i class="fas fa-exclamation-triangle"></i> ${issue}</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('health-issues').innerHTML = html;
+        } else {
+            document.getElementById('health-issues').innerHTML = '<p class="text-success"><i class="fas fa-check"></i> No issues detected</p>';
+        }
+        
+        // Update warnings
+        if (warnings && warnings.length > 0) {
+            let html = '<ul class="list-unstyled">';
+            warnings.forEach(warning => {
+                html += `<li class="text-warning"><i class="fas fa-exclamation-circle"></i> ${warning}</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('health-warnings').innerHTML = html;
+        } else {
+            document.getElementById('health-warnings').innerHTML = '<p class="text-success"><i class="fas fa-check"></i> No warnings</p>';
+        }
+    }
+    
+    updateChart(status) {
+        const now = new Date().toLocaleTimeString();
+        const queueInfo = status.queue_info || {};
+        
+        // Add new data point
+        this.performanceData.push({
+            time: now,
+            queue_length: queueInfo.queue_length || 0,
+            failed_length: queueInfo.failed_length || 0,
+            processing_length: queueInfo.processing_length || 0
+        });
+        
+        // Keep only last 20 data points
+        if (this.performanceData.length > 20) {
+            this.performanceData.shift();
+        }
+        
+        // Update chart
+        this.performanceChart.data.labels = this.performanceData.map(d => d.time);
+        this.performanceChart.data.datasets[0].data = this.performanceData.map(d => d.queue_length);
+        this.performanceChart.data.datasets[1].data = this.performanceData.map(d => d.failed_length);
+        this.performanceChart.data.datasets[2].data = this.performanceData.map(d => d.processing_length);
+        
+        this.performanceChart.update();
+    }
+    
+    async controlWorkers(action, params = {}) {
+        try {
+            const response = await fetch('/clinical_records/api/django-q/control/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCsrfToken()
+                },
+                body: JSON.stringify({ action, ...params })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showAlert(result.message, 'success');
+                // Refresh data after control action
+                setTimeout(() => this.refreshData(), 2000);
+            } else {
+                this.showAlert(result.message, 'danger');
+            }
+            
+        } catch (error) {
+            console.error('Error controlling workers:', error);
+            this.showAlert('Error controlling workers: ' + error.message, 'danger');
+        }
+    }
+    
+    toggleAutoRefresh() {
+        const button = document.getElementById('auto-refresh-btn');
+        
+        if (this.autoRefreshInterval) {
+            // Stop auto refresh
+            clearInterval(this.autoRefreshInterval);
+            this.autoRefreshInterval = null;
+            button.innerHTML = '<i class="fas fa-play"></i> Auto Refresh (30s)';
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
+        } else {
+            // Start auto refresh
+            this.autoRefreshInterval = setInterval(() => {
+                this.refreshData();
+            }, 30000);
+            button.innerHTML = '<i class="fas fa-pause"></i> Stop Auto Refresh';
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-success');
+        }
+    }
+    
+    showRefreshIndicator(show) {
+        const indicator = document.querySelector('.refresh-indicator');
+        indicator.style.display = show ? 'inline' : 'none';
+    }
+    
+    showAlert(message, type) {
+        const container = document.getElementById('alert-container');
+        const alertId = 'alert-' + Date.now();
+        
+        const alertHtml = `
+            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        container.innerHTML = alertHtml;
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            const alertElement = document.getElementById(alertId);
+            if (alertElement) {
+                alertElement.remove();
+            }
+        }, 5000);
+    }
+    
+    getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new DjangoQDashboard();
+});
+</script>
+{% endblock %}

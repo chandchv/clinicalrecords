@@ -1,0 +1,629 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Review: {{ review.document.original_filename }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .review-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .document-preview {
+        max-height: 600px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        background: #f8f9fa;
+    }
+    
+    .ocr-text-area {
+        min-height: 300px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+    
+    .confidence-bar {
+        height: 20px;
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .confidence-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .structured-data-editor {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+    }
+    
+    .data-field {
+        margin-bottom: 15px;
+    }
+    
+    .data-field label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    
+    .btn-review-action {
+        min-width: 120px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .review-timer {
+        background: #e3f2fd;
+        border: 1px solid #bbdefb;
+        border-radius: 6px;
+        padding: 10px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .timer-display {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #1976d2;
+    }
+    
+    .patient-info {
+        background: #fff3e0;
+        border: 1px solid #ffcc02;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .priority-urgent { color: #dc3545; }
+    .priority-high { color: #fd7e14; }
+    .priority-normal { color: #28a745; }
+    .priority-low { color: #6c757d; }
+    
+    .nav-tabs .nav-link.active {
+        background-color: #667eea;
+        border-color: #667eea;
+        color: white;
+    }
+    
+    .tab-content {
+        border: 1px solid #dee2e6;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        padding: 20px;
+        background: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Review Header -->
+    <div class="review-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-1">
+                    <i class="fas fa-file-medical"></i>
+                    {{ review.document.original_filename }}
+                </h2>
+                <p class="mb-0">
+                    <i class="fas fa-user"></i> {{ patient.get_full_name }}
+                    <span class="mx-2">•</span>
+                    <i class="fas fa-calendar"></i> {{ clinical_record.record_date|date:"M d, Y" }}
+                    <span class="mx-2">•</span>
+                    <i class="fas fa-tag"></i> {{ clinical_record.get_record_type_display }}
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <span class="badge badge-lg 
+                    {% if review.priority == 'urgent' %}badge-danger
+                    {% elif review.priority == 'high' %}badge-warning
+                    {% elif review.priority == 'normal' %}badge-success
+                    {% else %}badge-secondary{% endif %}">
+                    {{ review.get_priority_display }} Priority
+                </span>
+                <br>
+                <small class="mt-1 d-block">
+                    Review Type: {{ review.get_review_type_display }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Information -->
+    <div class="patient-info">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Patient:</strong> {{ patient.get_full_name }}
+            </div>
+            <div class="col-md-3">
+                <strong>DOB:</strong> {{ patient.date_of_birth|date:"M d, Y" }}
+            </div>
+            <div class="col-md-3">
+                <strong>Phone:</strong> {{ patient.phone_number|default:"Not provided" }}
+            </div>
+            <div class="col-md-3">
+                <strong>Record:</strong> {{ clinical_record.title }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Timer -->
+    {% if review.status == 'in_progress' %}
+    <div class="review-timer">
+        <div class="timer-display" id="reviewTimer">00:00:00</div>
+        <small class="text-muted">Time spent on this review</small>
+    </div>
+    {% endif %}
+
+    <!-- Main Review Interface -->
+    <div class="row">
+        <!-- Document Preview -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-eye"></i> Document Preview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if document.document_type == 'image' %}
+                        <img src="{{ document.file.url }}" class="img-fluid" alt="Document preview">
+                    {% elif document.document_type == 'pdf' %}
+                        <embed src="{{ document.file.url }}" type="application/pdf" width="100%" height="600px">
+                    {% else %}
+                        <div class="document-preview">
+                            <p class="text-muted">Document preview not available for this file type.</p>
+                            <a href="{{ document.file.url }}" target="_blank" class="btn btn-outline-primary">
+                                <i class="fas fa-external-link-alt"></i> Open Document
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Review Interface -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-toggle="tab" href="#ocr-tab" role="tab">
+                                <i class="fas fa-font"></i> OCR Text
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#structured-tab" role="tab">
+                                <i class="fas fa-table"></i> Structured Data
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#notes-tab" role="tab">
+                                <i class="fas fa-sticky-note"></i> Notes
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="tab-content">
+                    <!-- OCR Text Tab -->
+                    <div class="tab-pane fade show active" id="ocr-tab" role="tabpanel">
+                        <form id="reviewForm">
+                            {% csrf_token %}
+                            
+                            <!-- Original OCR Confidence -->
+                            {% if review.confidence_before %}
+                            <div class="mb-3">
+                                <label class="form-label">Original OCR Confidence</label>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" 
+                                         style="width: {{ review.confidence_before|floatformat:0 }}%; 
+                                                background-color: {% if review.confidence_before < 0.5 %}#dc3545{% elif review.confidence_before < 0.7 %}#ffc107{% else %}#28a745{% endif %};">
+                                    </div>
+                                    <div class="confidence-text">{{ review.confidence_before|floatformat:1 }}%</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Original OCR Text -->
+                            <div class="mb-3">
+                                <label class="form-label">Original OCR Text</label>
+                                <textarea class="form-control ocr-text-area" readonly>{{ review.original_ocr_text }}</textarea>
+                            </div>
+                            
+                            <!-- Corrected OCR Text -->
+                            <div class="mb-3">
+                                <label class="form-label">Corrected OCR Text</label>
+                                <textarea name="corrected_ocr_text" 
+                                         class="form-control ocr-text-area" 
+                                         placeholder="Make corrections to the OCR text here...">{{ review.corrected_ocr_text|default:review.original_ocr_text }}</textarea>
+                            </div>
+                            
+                            <!-- Confidence After Review -->
+                            <div class="mb-3">
+                                <label class="form-label">Confidence After Review</label>
+                                <input type="range" 
+                                       name="confidence_after" 
+                                       class="form-range" 
+                                       min="0" 
+                                       max="100" 
+                                       value="{{ review.confidence_after|default:85 }}"
+                                       oninput="updateConfidenceDisplay(this.value)">
+                                <div class="d-flex justify-content-between">
+                                    <small>0%</small>
+                                    <span id="confidenceValue" class="badge badge-info">{{ review.confidence_after|default:85 }}%</span>
+                                    <small>100%</small>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Structured Data Tab -->
+                    <div class="tab-pane fade" id="structured-tab" role="tabpanel">
+                        <div class="structured-data-editor">
+                            <h6>Original Extracted Data</h6>
+                            <pre class="bg-light p-3 rounded">{{ review.original_structured_data|default:"No structured data extracted"|pprint }}</pre>
+                            
+                            <h6 class="mt-4">Corrected Structured Data</h6>
+                            <textarea name="corrected_structured_data" 
+                                     class="form-control" 
+                                     rows="10" 
+                                     placeholder="Enter corrected structured data in JSON format...">{{ review.corrected_structured_data|default:review.original_structured_data|pprint }}</textarea>
+                            <small class="form-text text-muted">
+                                Enter data in JSON format. Use the original data above as a reference.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes Tab -->
+                    <div class="tab-pane fade" id="notes-tab" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label">Review Notes</label>
+                            <textarea name="review_notes" 
+                                     class="form-control" 
+                                     rows="8" 
+                                     placeholder="Add any notes about this review, corrections made, or issues encountered...">{{ review.review_notes }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Time Spent (minutes)</label>
+                            <input type="number" 
+                                   name="time_spent_minutes" 
+                                   class="form-control" 
+                                   min="1" 
+                                   value="{{ review.time_spent_minutes|default:'' }}"
+                                   placeholder="Enter time spent in minutes">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap">
+                        {% if review.status == 'pending' %}
+                            <button type="button" class="btn btn-info btn-review-action" onclick="startReview()">
+                                <i class="fas fa-play"></i> Start Review
+                            </button>
+                        {% endif %}
+                        
+                        {% if review.status in 'pending,in_progress' %}
+                            <button type="button" class="btn btn-success btn-review-action" onclick="completeReview()">
+                                <i class="fas fa-check"></i> Complete Review
+                            </button>
+                            
+                            <button type="button" class="btn btn-warning btn-review-action" onclick="escalateReview()">
+                                <i class="fas fa-arrow-up"></i> Escalate
+                            </button>
+                            
+                            <button type="button" class="btn btn-danger btn-review-action" onclick="rejectReview()">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'clinical_records:review_queue_list' %}" class="btn btn-outline-secondary btn-review-action">
+                            <i class="fas fa-arrow-left"></i> Back to Queue
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Complete Review Modal -->
+<div class="modal fade" id="completeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complete Review</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to complete this review? This will apply your corrections to the document.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmComplete">
+                    <i class="fas fa-check"></i> Complete Review
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Escalate Review Modal -->
+<div class="modal fade" id="escalateModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Escalate Review</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="escalationReason">Reason for escalation:</label>
+                    <textarea id="escalationReason" class="form-control" rows="4" 
+                             placeholder="Please explain why this review needs to be escalated..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmEscalate">
+                    <i class="fas fa-arrow-up"></i> Escalate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Review Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Review</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="rejectionReason">Reason for rejection:</label>
+                    <textarea id="rejectionReason" class="form-control" rows="4" 
+                             placeholder="Please explain why this review is being rejected..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmReject">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let reviewStartTime = null;
+
+// Initialize review timer if in progress
+{% if review.status == 'in_progress' %}
+    reviewStartTime = new Date('{{ review.started_at|date:"c" }}');
+    updateTimer();
+    setInterval(updateTimer, 1000);
+{% endif %}
+
+function updateTimer() {
+    if (reviewStartTime) {
+        const now = new Date();
+        const diff = now - reviewStartTime;
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        
+        document.getElementById('reviewTimer').textContent = 
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+function updateConfidenceDisplay(value) {
+    document.getElementById('confidenceValue').textContent = value + '%';
+}
+
+function startReview() {
+    fetch(`/clinical-records/reviews/{{ review.id }}/start/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while starting the review.');
+    });
+}
+
+function completeReview() {
+    $('#completeModal').modal('show');
+}
+
+function escalateReview() {
+    $('#escalateModal').modal('show');
+}
+
+function rejectReview() {
+    $('#rejectModal').modal('show');
+}
+
+// Complete review confirmation
+document.getElementById('confirmComplete').addEventListener('click', function() {
+    const formData = new FormData(document.getElementById('reviewForm'));
+    
+    // Add additional form data from other tabs
+    const correctedStructuredData = document.querySelector('[name="corrected_structured_data"]').value;
+    const reviewNotes = document.querySelector('[name="review_notes"]').value;
+    const timeSpent = document.querySelector('[name="time_spent_minutes"]').value;
+    
+    formData.append('corrected_structured_data', correctedStructuredData);
+    formData.append('review_notes', reviewNotes);
+    formData.append('time_spent_minutes', timeSpent);
+    
+    // Show loading state
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Completing...';
+    this.disabled = true;
+    
+    fetch(`/clinical-records/reviews/{{ review.id }}/complete/`, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect_url;
+        } else {
+            alert('Error: ' + data.error);
+            $('#completeModal').modal('hide');
+            // Reset button
+            this.innerHTML = '<i class="fas fa-check"></i> Complete Review';
+            this.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while completing the review.');
+        $('#completeModal').modal('hide');
+        // Reset button
+        this.innerHTML = '<i class="fas fa-check"></i> Complete Review';
+        this.disabled = false;
+    });
+});
+
+// Escalate review confirmation
+document.getElementById('confirmEscalate').addEventListener('click', function() {
+    const reason = document.getElementById('escalationReason').value.trim();
+    
+    if (!reason) {
+        alert('Please provide a reason for escalation.');
+        return;
+    }
+    
+    // Show loading state
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Escalating...';
+    this.disabled = true;
+    
+    fetch(`/clinical-records/reviews/{{ review.id }}/escalate/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+            $('#escalateModal').modal('hide');
+            // Reset button
+            this.innerHTML = '<i class="fas fa-arrow-up"></i> Escalate';
+            this.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while escalating the review.');
+        $('#escalateModal').modal('hide');
+        // Reset button
+        this.innerHTML = '<i class="fas fa-arrow-up"></i> Escalate';
+        this.disabled = false;
+    });
+});
+
+// Reject review confirmation
+document.getElementById('confirmReject').addEventListener('click', function() {
+    const reason = document.getElementById('rejectionReason').value.trim();
+    
+    if (!reason) {
+        alert('Please provide a reason for rejection.');
+        return;
+    }
+    
+    // Show loading state
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rejecting...';
+    this.disabled = true;
+    
+    fetch(`/clinical-records/reviews/{{ review.id }}/reject/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '/clinical-records/reviews/';
+        } else {
+            alert('Error: ' + data.error);
+            $('#rejectModal').modal('hide');
+            // Reset button
+            this.innerHTML = '<i class="fas fa-times"></i> Reject';
+            this.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while rejecting the review.');
+        $('#rejectModal').modal('hide');
+        // Reset button
+        this.innerHTML = '<i class="fas fa-times"></i> Reject';
+        this.disabled = false;
+    });
+});
+</script>
+{% endblock %}"

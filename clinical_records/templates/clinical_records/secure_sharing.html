@@ -1,0 +1,378 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Secure Sharing - Clinical Records{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'clinical_records/css/secure_sharing.css' %}">
+<link rel="stylesheet" href="{% static 'clinical_records/css/fontawesome.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="secure-sharing-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1><i class="fas fa-share-alt"></i> Secure Sharing</h1>
+            {% if record %}
+                <p class="subtitle">Share clinical record: {{ record.title }}</p>
+            {% else %}
+                <p class="subtitle">Manage secure sharing of clinical records</p>
+            {% endif %}
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'clinical_records:share_management' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list"></i> Manage All Shares
+            </a>
+        </div>
+    </div>
+
+    {% if record %}
+        <!-- Record Information -->
+        <div class="record-info-card">
+            <div class="card-header">
+                <h3><i class="fas fa-file-medical"></i> Record Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="record-details">
+                    <div class="detail-item">
+                        <label>Title:</label>
+                        <span>{{ record.title }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Type:</label>
+                        <span class="record-type">{{ record.record_type }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Patient:</label>
+                        <span>{{ record.patient_name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Created:</label>
+                        <span class="date-display" data-date="{{ record.created_at }}">{{ record.created_at }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Documents:</label>
+                        <span class="document-count">{{ record.document_count }} file(s)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create New Share -->
+        <div class="create-share-card">
+            <div class="card-header">
+                <h3><i class="fas fa-plus-circle"></i> Create New Share</h3>
+            </div>
+            <div class="card-body">
+                <form id="create-share-form" class="share-form">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Settings -->
+                    <div class="form-section">
+                        <h4>Basic Settings</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="access_level">Access Level</label>
+                                <select id="access_level" name="access_level" class="form-control" required>
+                                    <option value="VIEW">View Only</option>
+                                    <option value="DOWNLOAD">View & Download</option>
+                                    <option value="FULL">Full Access</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    Determines what the recipient can do with the shared record
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="expiry_days">Expires In (Days)</label>
+                                <input type="number" id="expiry_days" name="expiry_days" 
+                                       class="form-control" value="30" min="1" max="365" required>
+                                <small class="form-text text-muted">
+                                    Maximum: {{ sharing_config.max_expiry_days }} days
+                                </small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="max_access_count">Maximum Access Count</label>
+                                <input type="number" id="max_access_count" name="max_access_count" 
+                                       class="form-control" value="10" min="1" max="100" required>
+                                <small class="form-text text-muted">
+                                    How many times the link can be accessed
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="purpose">Purpose</label>
+                                <input type="text" id="purpose" name="purpose" 
+                                       class="form-control" placeholder="e.g., Second opinion, referral">
+                                <small class="form-text text-muted">
+                                    Brief description of why you're sharing this record
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recipient Information -->
+                    <div class="form-section">
+                        <h4>Recipient Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="recipient_name">Recipient Name</label>
+                                <input type="text" id="recipient_name" name="recipient_name" 
+                                       class="form-control" placeholder="Dr. John Smith">
+                            </div>
+                            <div class="form-group">
+                                <label for="recipient_email">Recipient Email</label>
+                                <input type="email" id="recipient_email" name="recipient_email" 
+                                       class="form-control" placeholder="doctor@hospital.com">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="recipient_organization">Organization</label>
+                                <input type="text" id="recipient_organization" name="recipient_organization" 
+                                       class="form-control" placeholder="City General Hospital">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <div class="form-section">
+                        <h4>Advanced Settings</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input type="checkbox" id="send_notification" name="send_notification" 
+                                           class="form-check-input">
+                                    <label for="send_notification" class="form-check-label">
+                                        Send email notification to recipient
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input type="checkbox" id="require_authentication" name="require_authentication" 
+                                           class="form-check-input">
+                                    <label for="require_authentication" class="form-check-label">
+                                        Require authentication to access
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="allowed_ips">Allowed IP Addresses (Optional)</label>
+                                <textarea id="allowed_ips" name="allowed_ips" class="form-control" rows="2"
+                                          placeholder="192.168.1.100&#10;203.0.113.0/24"></textarea>
+                                <small class="form-text text-muted">
+                                    One IP address or CIDR block per line. Leave empty to allow from any IP.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Patient Consent -->
+                    <div class="form-section">
+                        <h4>Patient Consent</h4>
+                        <div class="consent-section">
+                            <div class="form-check">
+                                <input type="checkbox" id="patient_consent_confirmed" name="patient_consent_confirmed" 
+                                       class="form-check-input" required>
+                                <label for="patient_consent_confirmed" class="form-check-label">
+                                    <strong>I confirm that I have obtained patient consent for sharing this medical record</strong>
+                                </label>
+                            </div>
+                            <div class="consent-details">
+                                <small class="text-muted">
+                                    By checking this box, you confirm that:
+                                    <ul>
+                                        <li>The patient has been informed about the sharing of their medical record</li>
+                                        <li>The patient has given explicit consent for this sharing</li>
+                                        <li>The sharing is for legitimate medical purposes</li>
+                                        <li>You have documented the patient's consent appropriately</li>
+                                    </ul>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-share"></i> Create Share Link
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Existing Shares -->
+        {% if existing_shares %}
+        <div class="existing-shares-card">
+            <div class="card-header">
+                <h3><i class="fas fa-history"></i> Existing Shares</h3>
+            </div>
+            <div class="card-body">
+                <div class="shares-table-container">
+                    <table class="shares-table">
+                        <thead>
+                            <tr>
+                                <th>Created</th>
+                                <th>Recipient</th>
+                                <th>Access Level</th>
+                                <th>Expires</th>
+                                <th>Access Count</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for share in existing_shares %}
+                            <tr class="share-row {% if not share.is_active %}inactive{% endif %}">
+                                <td class="date-display" data-date="{{ share.created_at }}">{{ share.created_at }}</td>
+                                <td>
+                                    <div class="recipient-info">
+                                        <div class="recipient-name">
+                                            {{ share.recipient_info.name|default:"Unknown" }}
+                                        </div>
+                                        <div class="recipient-email">
+                                            {{ share.recipient_info.email|default:"" }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="access-level-badge access-level-{{ share.access_level|lower }}">
+                                        {{ share.access_level }}
+                                    </span>
+                                </td>
+                                <td class="date-display" data-date="{{ share.expires_at }}">{{ share.expires_at }}</td>
+                                <td>
+                                    <span class="access-count">
+                                        {{ share.access_count }} / {{ share.max_access_count }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if share.is_active %}
+                                        <span class="status-badge status-active">Active</span>
+                                    {% else %}
+                                        <span class="status-badge status-inactive">
+                                            {% if share.revoked_at %}Revoked{% else %}Expired{% endif %}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="actions">
+                                    {% if share.is_active %}
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                onclick="copyShareLink('{{ share.token }}')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning" 
+                                                onclick="revokeShare('{{ share.id }}')">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    {% endif %}
+                                    <a href="{% url 'clinical_records:share_audit' token_id=share.id %}" 
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-history"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <!-- No Record Selected -->
+        <div class="no-record-card">
+            <div class="card-body text-center">
+                <i class="fas fa-share-alt fa-3x text-muted mb-3"></i>
+                <h3>Select a Record to Share</h3>
+                <p class="text-muted">
+                    Choose a clinical record from the patient timeline to create secure shares.
+                </p>
+                <a href="{% url 'clinical_records:patient_timeline' patient_id='00000000-0000-0000-0000-000000000000' %}" 
+                   class="btn btn-primary">
+                    <i class="fas fa-search"></i> Browse Records
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Share Created Modal -->
+<div class="modal fade" id="shareCreatedModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle text-success"></i> Share Created Successfully
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="share-success-content">
+                    <div class="share-url-section">
+                        <label>Share URL:</label>
+                        <div class="input-group">
+                            <input type="text" id="shareUrlInput" class="form-control" readonly>
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" onclick="copyToClipboard('shareUrlInput')">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="share-details">
+                        <div class="detail-row">
+                            <span class="label">Expires:</span>
+                            <span id="shareExpiresAt"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Access Level:</span>
+                            <span id="shareAccessLevel"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Max Access Count:</span>
+                            <span id="shareMaxAccess"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="copyToClipboard('shareUrlInput')">
+                    <i class="fas fa-copy"></i> Copy URL
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Creating secure share...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'clinical_records/js/secure_sharing.js' %}"></script>
+<script>
+    // Initialize with record data
+    {% if record %}
+    window.recordData = {{ record|safe }};
+    {% endif %}
+    
+    // Initialize sharing configuration
+    window.sharingConfig = {{ sharing_config|safe }};
+</script>
+{% endblock %}

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Records Service</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <div class="h-10 w-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-file-medical text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Clinical Records Service</h1>
+                        <p class="text-blue-100">Secure Medical Document Management</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/login/" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        <!-- Hero Section -->
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                Secure Medical Record Management
+            </h2>
+            <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                Upload, store, and manage your medical records securely. 
+                Access your health information anytime, anywhere with our encrypted platform.
+            </p>
+            <div class="flex justify-center space-x-4">
+                <a href="/login/" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Get Started
+                </a>
+                <a href="/dashboard/" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-tachometer-alt mr-2"></i>
+                    Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <div class="bg-white rounded-xl shadow-sm p-8 card-hover">
+                <div class="h-16 w-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-upload text-blue-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Easy Upload</h3>
+                <p class="text-gray-600">
+                    Upload prescriptions, lab reports, and medical documents with just a few clicks. 
+                    Support for PDF, images, and DICOM files.
+                </p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-8 card-hover">
+                <div class="h-16 w-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-shield-alt text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Secure Storage</h3>
+                <p class="text-gray-600">
+                    Your medical records are encrypted and stored securely. 
+                    Only you and authorized healthcare providers can access your information.
+                </p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-8 card-hover">
+                <div class="h-16 w-16 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-mobile-alt text-purple-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Mobile Access</h3>
+                <p class="text-gray-600">
+                    Access your medical records from any device, anywhere. 
+                    View, download, and share your health information on the go.
+                </p>
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="bg-white rounded-xl shadow-sm p-8 mb-16">
+            <h3 class="text-2xl font-semibold text-gray-900 mb-8 text-center">How It Works</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="h-12 w-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">1</div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Login</h4>
+                    <p class="text-sm text-gray-600">Access your account securely</p>
+                </div>
+                <div class="text-center">
+                    <div class="h-12 w-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">2</div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Upload</h4>
+                    <p class="text-sm text-gray-600">Upload your medical documents</p>
+                </div>
+                <div class="text-center">
+                    <div class="h-12 w-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">3</div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Organize</h4>
+                    <p class="text-sm text-gray-600">Categorize and organize records</p>
+                </div>
+                <div class="text-center">
+                    <div class="h-12 w-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">4</div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Access</h4>
+                    <p class="text-sm text-gray-600">View and share when needed</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Features -->
+        <div class="bg-gray-100 rounded-xl p-8">
+            <h3 class="text-2xl font-semibold text-gray-900 mb-6 text-center">Security & Privacy</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <i class="fas fa-lock text-3xl text-green-600 mb-3"></i>
+                    <h4 class="font-semibold text-gray-900 mb-2">End-to-End Encryption</h4>
+                    <p class="text-sm text-gray-600">All data encrypted in transit and at rest</p>
+                </div>
+                <div class="text-center">
+                    <i class="fas fa-user-shield text-3xl text-blue-600 mb-3"></i>
+                    <h4 class="font-semibold text-gray-900 mb-2">Access Control</h4>
+                    <p class="text-sm text-gray-600">Role-based permissions and authentication</p>
+                </div>
+                <div class="text-center">
+                    <i class="fas fa-audit text-3xl text-purple-600 mb-3"></i>
+                    <h4 class="font-semibold text-gray-900 mb-2">Audit Trail</h4>
+                    <p class="text-sm text-gray-600">Complete activity logging and monitoring</p>
+                </div>
+                <div class="text-center">
+                    <i class="fas fa-certificate text-3xl text-orange-600 mb-3"></i>
+                    <h4 class="font-semibold text-gray-900 mb-2">Compliance</h4>
+                    <p class="text-sm text-gray-600">HIPAA and healthcare compliance standards</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="h-8 w-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-file-medical text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold">Clinical Records Service</span>
+                </div>
+                <p class="text-gray-400 mb-4">
+                    Secure, encrypted medical record management for healthcare providers and patients.
+                </p>
+                <div class="flex justify-center space-x-6 text-sm text-gray-400">
+                    <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-white transition-colors">Terms of Service</a>
+                    <a href="#" class="hover:text-white transition-colors">Contact Support</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

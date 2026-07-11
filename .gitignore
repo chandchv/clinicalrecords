@@ -1,0 +1,35 @@
+# Django/Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+db.sqlite3
+/media/
+/staticfiles/
+*.log
+
+# Environments
+.env
+.venv/
+env/
+venv/
+ENV/
+my_env/
+
+# Node/Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# Editor/OS
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.DS_Store
+Thumbs.db

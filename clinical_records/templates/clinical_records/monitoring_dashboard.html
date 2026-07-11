@@ -1,0 +1,772 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}System Monitoring Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .metric-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .metric-label {
+        color: #7f8c8d;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+    
+    .status-healthy {
+        color: #27ae60;
+    }
+    
+    .status-warning {
+        color: #f39c12;
+    }
+    
+    .status-critical {
+        color: #e74c3c;
+    }
+    
+    .chart-container {
+        height: 300px;
+        margin: 20px 0;
+    }
+    
+    .alert-item {
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 4px;
+        border-left: 4px solid;
+    }
+    
+    .alert-critical {
+        background-color: #fdf2f2;
+        border-left-color: #e53e3e;
+        color: #742a2a;
+    }
+    
+    .alert-warning {
+        background-color: #fffbf0;
+        border-left-color: #dd6b20;
+        color: #744210;
+    }
+    
+    .alert-info {
+        background-color: #ebf8ff;
+        border-left-color: #3182ce;
+        color: #2a4365;
+    }
+    
+    .refresh-indicator {
+        display: none;
+        color: #007bff;
+    }
+    
+    .tab-content {
+        padding: 20px 0;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>System Monitoring Dashboard</h1>
+            <p class="text-muted">Comprehensive monitoring and alerting for RxDoctor clinical records system</p>
+            
+            <!-- Refresh Controls -->
+            <div class="mb-3">
+                <button id="refresh-btn" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button id="auto-refresh-btn" class="btn btn-outline-secondary">
+                    <i class="fas fa-play"></i> Auto Refresh (60s)
+                </button>
+                <button id="test-alert-btn" class="btn btn-outline-warning">
+                    <i class="fas fa-bell"></i> Test Alert
+                </button>
+                <span class="refresh-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Refreshing...
+                </span>
+            </div>
+            
+            <!-- Alert Messages -->
+            <div id="alert-container"></div>
+        </div>
+    </div>
+    
+    <!-- Overall Health Status -->
+    <div class="row">
+        <div class="col-12">
+            <div class="metric-card">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div id="overall-health" class="metric-value">Loading...</div>
+                        <div class="metric-label">Overall Health</div>
+                    </div>
+                    <div class="col-md-9">
+                        <div id="health-alerts"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabs for different metric categories -->
+    <ul class="nav nav-tabs" id="metricsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
+                System Metrics
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="application-tab" data-bs-toggle="tab" data-bs-target="#application" type="button" role="tab">
+                Application Metrics
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">
+                Security Metrics
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="alerts-tab" data-bs-toggle="tab" data-bs-target="#alerts" type="button" role="tab">
+                Alert History
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="metricsTabContent">
+        <!-- System Metrics Tab -->
+        <div class="tab-pane fade show active" id="system" role="tabpanel">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="cpu-usage" class="metric-value">-</div>
+                        <div class="metric-label">CPU Usage</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="memory-usage" class="metric-value">-</div>
+                        <div class="metric-label">Memory Usage</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="disk-usage" class="metric-value">-</div>
+                        <div class="metric-label">Disk Usage</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="load-average" class="metric-value">-</div>
+                        <div class="metric-label">Load Average (1m)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Performance Chart -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="metric-card">
+                        <h3>System Performance</h3>
+                        <div class="chart-container">
+                            <canvas id="system-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Application Metrics Tab -->
+        <div class="tab-pane fade" id="application" role="tabpanel">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="total-records" class="metric-value">-</div>
+                        <div class="metric-label">Total Records</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="processing-success-rate" class="metric-value">-</div>
+                        <div class="metric-label">Success Rate</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="django-q-workers" class="metric-value">-</div>
+                        <div class="metric-label">Django-Q Workers</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="queue-length" class="metric-value">-</div>
+                        <div class="metric-label">Queue Length</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Application Performance Chart -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="metric-card">
+                        <h3>Application Performance</h3>
+                        <div class="chart-container">
+                            <canvas id="application-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Security Metrics Tab -->
+        <div class="tab-pane fade" id="security" role="tabpanel">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="security-events-hour" class="metric-value">-</div>
+                        <div class="metric-label">Security Events (1h)</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="failed-logins-hour" class="metric-value">-</div>
+                        <div class="metric-label">Failed Logins (1h)</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="suspicious-ips" class="metric-value">-</div>
+                        <div class="metric-label">Suspicious IPs</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <div id="file-violations" class="metric-value">-</div>
+                        <div class="metric-label">File Access Violations</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Events Details -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="metric-card">
+                        <h3>Security Event Details</h3>
+                        <div id="security-details">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alert History Tab -->
+        <div class="tab-pane fade" id="alerts" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="metric-card">
+                        <h3>Recent Alerts</h3>
+                        <div id="alert-history">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'clinical_records/js/chart.min.js' %}"></script>
+<script>
+class MonitoringDashboard {
+    constructor() {
+        this.autoRefreshInterval = null;
+        this.systemChart = null;
+        this.applicationChart = null;
+        this.systemData = [];
+        this.applicationData = [];
+        
+        this.initializeEventListeners();
+        this.initializeCharts();
+        this.refreshData();
+    }
+    
+    initializeEventListeners() {
+        document.getElementById('refresh-btn').addEventListener('click', () => {
+            this.refreshData();
+        });
+        
+        document.getElementById('auto-refresh-btn').addEventListener('click', () => {
+            this.toggleAutoRefresh();
+        });
+        
+        document.getElementById('test-alert-btn').addEventListener('click', () => {
+            this.sendTestAlert();
+        });
+    }
+    
+    initializeCharts() {
+        // System performance chart
+        const systemCtx = document.getElementById('system-chart').getContext('2d');
+        this.systemChart = new Chart(systemCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'CPU %',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Memory %',
+                        data: [],
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Disk %',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+        
+        // Application performance chart
+        const appCtx = document.getElementById('application-chart').getContext('2d');
+        this.applicationChart = new Chart(appCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Success Rate %',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Queue Length',
+                        data: [],
+                        borderColor: 'rgb(255, 205, 86)',
+                        backgroundColor: 'rgba(255, 205, 86, 0.2)',
+                        tension: 0.1,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        max: 100
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+    }
+    
+    async refreshData() {
+        this.showRefreshIndicator(true);
+        
+        try {
+            // Fetch all metrics
+            const [healthResponse, systemResponse, appResponse, securityResponse, alertsResponse] = await Promise.all([
+                fetch('/clinical_records/api/monitoring/health/'),
+                fetch('/clinical_records/api/monitoring/system/'),
+                fetch('/clinical_records/api/monitoring/application/'),
+                fetch('/clinical_records/api/monitoring/security/'),
+                fetch('/clinical_records/api/monitoring/alerts/')
+            ]);
+            
+            const health = await healthResponse.json();
+            const system = await systemResponse.json();
+            const application = await appResponse.json();
+            const security = await securityResponse.json();
+            const alerts = await alertsResponse.json();
+            
+            this.updateHealthDisplay(health);
+            this.updateSystemMetrics(system);
+            this.updateApplicationMetrics(application);
+            this.updateSecurityMetrics(security);
+            this.updateAlertHistory(alerts);
+            
+            this.updateCharts(system, application);
+            
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+            this.showAlert('Error refreshing data: ' + error.message, 'danger');
+        } finally {
+            this.showRefreshIndicator(false);
+        }
+    }
+    
+    updateHealthDisplay(health) {
+        const healthElement = document.getElementById('overall-health');
+        const alertsElement = document.getElementById('health-alerts');
+        
+        const healthText = health.overall_healthy ? 'HEALTHY' : 'UNHEALTHY';
+        const healthClass = health.overall_healthy ? 'status-healthy' : 'status-critical';
+        
+        healthElement.textContent = healthText;
+        healthElement.className = `metric-value ${healthClass}`;
+        
+        // Display alerts
+        let alertsHtml = '';
+        if (health.alerts && health.alerts.length > 0) {
+            health.alerts.forEach(alert => {
+                let alertClass = 'alert-info';
+                if (alert.includes('CRITICAL')) alertClass = 'alert-critical';
+                else if (alert.includes('WARNING')) alertClass = 'alert-warning';
+                
+                alertsHtml += `<div class="alert-item ${alertClass}">${alert}</div>`;
+            });
+        } else {
+            alertsHtml = '<div class="alert-item alert-info">No active alerts</div>';
+        }
+        
+        alertsElement.innerHTML = alertsHtml;
+    }
+    
+    updateSystemMetrics(system) {
+        if (system.error) {
+            document.getElementById('cpu-usage').textContent = 'Error';
+            document.getElementById('memory-usage').textContent = 'Error';
+            document.getElementById('disk-usage').textContent = 'Error';
+            document.getElementById('load-average').textContent = 'Error';
+            return;
+        }
+        
+        const cpu = system.cpu || {};
+        const memory = system.memory || {};
+        const disk = system.disk || {};
+        
+        document.getElementById('cpu-usage').textContent = `${cpu.percent || 0}%`;
+        document.getElementById('memory-usage').textContent = `${memory.percent || 0}%`;
+        document.getElementById('disk-usage').textContent = `${disk.percent || 0}%`;
+        document.getElementById('load-average').textContent = (cpu.load_avg_1m || 0).toFixed(2);
+        
+        // Apply color coding based on thresholds
+        this.applyThresholdColor('cpu-usage', cpu.percent || 0, 70, 85);
+        this.applyThresholdColor('memory-usage', memory.percent || 0, 75, 90);
+        this.applyThresholdColor('disk-usage', disk.percent || 0, 80, 90);
+    }
+    
+    updateApplicationMetrics(application) {
+        if (application.error) {
+            document.getElementById('total-records').textContent = 'Error';
+            document.getElementById('processing-success-rate').textContent = 'Error';
+            document.getElementById('django-q-workers').textContent = 'Error';
+            document.getElementById('queue-length').textContent = 'Error';
+            return;
+        }
+        
+        const records = application.clinical_records || {};
+        const processing = application.processing || {};
+        const djangoQ = application.django_q || {};
+        
+        document.getElementById('total-records').textContent = records.records?.total || 0;
+        document.getElementById('processing-success-rate').textContent = `${processing.last_hour?.success_rate || 100}%`;
+        document.getElementById('django-q-workers').textContent = djangoQ.workers || 0;
+        document.getElementById('queue-length').textContent = djangoQ.queue_length || 0;
+        
+        // Apply color coding
+        this.applyThresholdColor('processing-success-rate', processing.last_hour?.success_rate || 100, 95, 90, true);
+        this.applyThresholdColor('queue-length', djangoQ.queue_length || 0, 50, 100);
+    }
+    
+    updateSecurityMetrics(security) {
+        if (security.error) {
+            document.getElementById('security-events-hour').textContent = 'Error';
+            document.getElementById('failed-logins-hour').textContent = 'Error';
+            document.getElementById('suspicious-ips').textContent = 'Error';
+            document.getElementById('file-violations').textContent = 'Error';
+            return;
+        }
+        
+        const events = security.security_events || {};
+        const logins = security.failed_logins || {};
+        const suspiciousIps = security.suspicious_ips || [];
+        
+        document.getElementById('security-events-hour').textContent = events.last_hour || 0;
+        document.getElementById('failed-logins-hour').textContent = logins.last_hour || 0;
+        document.getElementById('suspicious-ips').textContent = suspiciousIps.length || 0;
+        document.getElementById('file-violations').textContent = security.file_access_violations || 0;
+        
+        // Apply color coding for security metrics
+        this.applyThresholdColor('security-events-hour', events.last_hour || 0, 5, 15);
+        this.applyThresholdColor('failed-logins-hour', logins.last_hour || 0, 10, 20);
+        this.applyThresholdColor('suspicious-ips', suspiciousIps.length || 0, 1, 3);
+        
+        // Update security details
+        this.updateSecurityDetails(security);
+    }
+    
+    updateSecurityDetails(security) {
+        const detailsElement = document.getElementById('security-details');
+        let html = '<div class="row">';
+        
+        // Security events breakdown
+        html += '<div class="col-md-6"><h5>Security Events</h5>';
+        const events = security.security_events || {};
+        html += `<p>Last Hour: ${events.last_hour || 0}</p>`;
+        html += `<p>Last Day: ${events.last_day || 0}</p>`;
+        html += '</div>';
+        
+        // Suspicious IPs
+        html += '<div class="col-md-6"><h5>Suspicious IP Addresses</h5>';
+        const suspiciousIps = security.suspicious_ips || [];
+        if (suspiciousIps.length > 0) {
+            html += '<ul>';
+            suspiciousIps.forEach(ip => {
+                html += `<li>${ip.ip_address}: ${ip.attempt_count} attempts</li>`;
+            });
+            html += '</ul>';
+        } else {
+            html += '<p>No suspicious IPs detected</p>';
+        }
+        html += '</div>';
+        
+        html += '</div>';
+        detailsElement.innerHTML = html;
+    }
+    
+    updateAlertHistory(alerts) {
+        const historyElement = document.getElementById('alert-history');
+        
+        if (!alerts.alerts || alerts.alerts.length === 0) {
+            historyElement.innerHTML = '<p>No recent alerts</p>';
+            return;
+        }
+        
+        let html = '';
+        alerts.alerts.reverse().forEach(alert => {
+            let alertClass = 'alert-info';
+            if (alert.type.includes('critical') || alert.message.includes('CRITICAL')) {
+                alertClass = 'alert-critical';
+            } else if (alert.type.includes('warning') || alert.message.includes('WARNING')) {
+                alertClass = 'alert-warning';
+            }
+            
+            const timestamp = new Date(alert.timestamp).toLocaleString();
+            html += `
+                <div class="alert-item ${alertClass}">
+                    <strong>${alert.type.toUpperCase()}</strong> - ${timestamp}
+                    <br>${alert.message}
+                </div>
+            `;
+        });
+        
+        historyElement.innerHTML = html;
+    }
+    
+    updateCharts(system, application) {
+        const now = new Date().toLocaleTimeString();
+        
+        // Update system chart
+        if (!system.error) {
+            const cpu = system.cpu || {};
+            const memory = system.memory || {};
+            const disk = system.disk || {};
+            
+            this.systemData.push({
+                time: now,
+                cpu: cpu.percent || 0,
+                memory: memory.percent || 0,
+                disk: disk.percent || 0
+            });
+            
+            // Keep only last 20 data points
+            if (this.systemData.length > 20) {
+                this.systemData.shift();
+            }
+            
+            this.systemChart.data.labels = this.systemData.map(d => d.time);
+            this.systemChart.data.datasets[0].data = this.systemData.map(d => d.cpu);
+            this.systemChart.data.datasets[1].data = this.systemData.map(d => d.memory);
+            this.systemChart.data.datasets[2].data = this.systemData.map(d => d.disk);
+            this.systemChart.update();
+        }
+        
+        // Update application chart
+        if (!application.error) {
+            const processing = application.processing || {};
+            const djangoQ = application.django_q || {};
+            
+            this.applicationData.push({
+                time: now,
+                successRate: processing.last_hour?.success_rate || 100,
+                queueLength: djangoQ.queue_length || 0
+            });
+            
+            // Keep only last 20 data points
+            if (this.applicationData.length > 20) {
+                this.applicationData.shift();
+            }
+            
+            this.applicationChart.data.labels = this.applicationData.map(d => d.time);
+            this.applicationChart.data.datasets[0].data = this.applicationData.map(d => d.successRate);
+            this.applicationChart.data.datasets[1].data = this.applicationData.map(d => d.queueLength);
+            this.applicationChart.update();
+        }
+    }
+    
+    applyThresholdColor(elementId, value, warningThreshold, criticalThreshold, reverse = false) {
+        const element = document.getElementById(elementId);
+        
+        let colorClass = 'status-healthy';
+        
+        if (reverse) {
+            // For metrics where lower is worse (like success rate)
+            if (value <= criticalThreshold) {
+                colorClass = 'status-critical';
+            } else if (value <= warningThreshold) {
+                colorClass = 'status-warning';
+            }
+        } else {
+            // For metrics where higher is worse (like CPU usage)
+            if (value >= criticalThreshold) {
+                colorClass = 'status-critical';
+            } else if (value >= warningThreshold) {
+                colorClass = 'status-warning';
+            }
+        }
+        
+        element.className = `metric-value ${colorClass}`;
+    }
+    
+    async sendTestAlert() {
+        try {
+            const response = await fetch('/clinical_records/api/monitoring/test-alert/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCsrfToken()
+                },
+                body: JSON.stringify({
+                    type: 'test',
+                    message: 'Test alert from monitoring dashboard'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showAlert('Test alert sent successfully', 'success');
+            } else {
+                this.showAlert(result.message, 'warning');
+            }
+            
+        } catch (error) {
+            this.showAlert('Error sending test alert: ' + error.message, 'danger');
+        }
+    }
+    
+    toggleAutoRefresh() {
+        const button = document.getElementById('auto-refresh-btn');
+        
+        if (this.autoRefreshInterval) {
+            // Stop auto refresh
+            clearInterval(this.autoRefreshInterval);
+            this.autoRefreshInterval = null;
+            button.innerHTML = '<i class="fas fa-play"></i> Auto Refresh (60s)';
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
+        } else {
+            // Start auto refresh
+            this.autoRefreshInterval = setInterval(() => {
+                this.refreshData();
+            }, 60000);
+            button.innerHTML = '<i class="fas fa-pause"></i> Stop Auto Refresh';
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-success');
+        }
+    }
+    
+    showRefreshIndicator(show) {
+        const indicator = document.querySelector('.refresh-indicator');
+        indicator.style.display = show ? 'inline' : 'none';
+    }
+    
+    showAlert(message, type) {
+        const container = document.getElementById('alert-container');
+        const alertId = 'alert-' + Date.now();
+        
+        const alertHtml = `
+            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        container.innerHTML = alertHtml;
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            const alertElement = document.getElementById(alertId);
+            if (alertElement) {
+                alertElement.remove();
+            }
+        }, 5000);
+    }
+    
+    getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new MonitoringDashboard();
+});
+</script>
+{% endblock %}

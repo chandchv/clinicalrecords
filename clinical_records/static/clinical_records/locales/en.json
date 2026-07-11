@@ -1,0 +1,13 @@
+{
+  "welcome": "Welcome",
+  "logout": "Logout",
+  "dashboard": "Dashboard",
+  "records": "Records",
+  "analytics": "Analytics",
+  "upload": "Upload",
+  "admin": "Admin",
+  "confirm_logout": "Confirm Logout",
+  "logout_message": "Are you sure you want to log out?",
+  "yes_logout": "Yes, Logout",
+  "cancel": "Cancel"
+}

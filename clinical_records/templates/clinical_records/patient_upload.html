@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Medical Records</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #4299e1;
+            background-color: #f7fafc;
+        }
+        .upload-area.dragover {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen py-8">
+        <div class="max-w-4xl mx-auto px-4">
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6 flex items-center">
+                <a href="/dashboard/" class="mr-4 p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 mb-1">Upload Medical Records</h1>
+                    <p class="text-gray-600">Upload your external prescriptions, lab reports, and other medical records.</p>
+                </div>
+            </div>
+
+            <!-- Upload Options -->
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <!-- Prescription Upload -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Prescription</h3>
+                        <p class="text-gray-600 text-sm mb-4">Upload prescription images or PDFs</p>
+                        <button onclick="openUploadModal('prescription')" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                            Upload Prescription
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lab Report Upload -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Lab Report</h3>
+                        <p class="text-gray-600 text-sm mb-4">Upload lab test results and reports</p>
+                        <button onclick="openUploadModal('lab-report')" class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+                            Upload Lab Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Other Medical Records -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Other Records</h3>
+                        <p class="text-gray-600 text-sm mb-4">Upload discharge summaries, consultation reports, etc.</p>
+                        <button onclick="openUploadModal('record')" class="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors">
+                            Upload Record
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Uploads -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Uploads</h2>
+                <div id="recent-uploads" class="space-y-3">
+                    <!-- Recent uploads will be loaded here -->
+                    <div class="text-center text-gray-500 py-8">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>No uploads yet. Upload your first medical record above.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="modal-title" class="text-lg font-semibold text-gray-900">Upload File</h3>
+                        <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="space-y-4">
+                            <!-- File Upload Area -->
+                            <div class="upload-area rounded-lg p-6 text-center cursor-pointer" onclick="document.getElementById('file-input').click()">
+                                <input type="file" id="file-input" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.tiff,.dcm,.doc,.docx">
+                                <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <p class="text-gray-600">Click to select file or drag and drop</p>
+                                <p class="text-sm text-gray-500 mt-2">PDF, JPG, PNG, TIFF, DICOM, DOC, DOCX supported</p>
+                            </div>
+                            
+                            <!-- Form Fields -->
+                            <div id="form-fields" class="space-y-4">
+                                <!-- Dynamic form fields will be inserted here -->
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                Upload File
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUploadType = '';
+        
+        function openUploadModal(type) {
+            currentUploadType = type;
+            const modal = document.getElementById('upload-modal');
+            const title = document.getElementById('modal-title');
+            const formFields = document.getElementById('form-fields');
+            
+            // Set title and form fields based on type
+            switch(type) {
+                case 'prescription':
+                    title.textContent = 'Upload Prescription';
+                    formFields.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Prescription for Diabetes Medication">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Prescription Date</label>
+                            <input type="date" name="prescription_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Doctor Name</label>
+                            <input type="text" name="doctor_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Dr. John Smith">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pharmacy Name</label>
+                            <input type="text" name="pharmacy_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ABC Pharmacy">
+                        </div>
+                    `;
+                    break;
+                case 'lab-report':
+                    title.textContent = 'Upload Lab Report';
+                    formFields.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Blood Test Results - CBC">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Test Date</label>
+                            <input type="date" name="test_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Lab Name</label>
+                            <input type="text" name="lab_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ABC Diagnostic Lab">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Test Type</label>
+                            <input type="text" name="test_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Complete Blood Count, Lipid Profile, etc.">
+                        </div>
+                    `;
+                    break;
+                case 'record':
+                    title.textContent = 'Upload Medical Record';
+                    formFields.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Discharge Summary, Consultation Report">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Record Date</label>
+                            <input type="date" name="record_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Record Type</label>
+                            <select name="record_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="external_record">General Medical Record</option>
+                                <option value="discharge_summary">Discharge Summary</option>
+                                <option value="consultation_report">Consultation Report</option>
+                                <option value="imaging_report">Imaging Report</option>
+                                <option value="pathology_report">Pathology Report</option>
+                                <option value="other">Other Medical Record</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Source Name</label>
+                            <input type="text" name="source_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Hospital/Clinic name">
+                        </div>
+                    `;
+                    break;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+        
+        function closeUploadModal() {
+            document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('upload-form').reset();
+            // Reset file input text UI
+            const fileInput = document.getElementById('file-input');
+            fileInput.value = '';
+            fileInput.dispatchEvent(new Event('change'));
+        }
+        
+        // Update file name in modal when file is selected
+        document.getElementById('file-input').addEventListener('change', function() {
+            const fileName = this.files[0] ? this.files[0].name : '';
+            const dropZoneText = document.querySelector('.upload-area p.text-gray-600');
+            const dropZoneSubtext = document.querySelector('.upload-area p.text-gray-500');
+            if (fileName) {
+                dropZoneText.innerHTML = `<strong>Selected file:</strong> <span class="text-blue-600 font-semibold">${fileName}</span>`;
+                dropZoneSubtext.textContent = "Click again to change file";
+            } else {
+                dropZoneText.textContent = "Click to select file or drag and drop";
+                dropZoneSubtext.textContent = "PDF, JPG, PNG, TIFF, DICOM, DOC, DOCX supported";
+            }
+        });
+
+        // Drag and drop support
+        const uploadArea = document.querySelector('.upload-area');
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('bg-blue-50', 'border-blue-300');
+            }, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('bg-blue-50', 'border-blue-300');
+            }, false);
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            const fileInput = document.getElementById('file-input');
+            
+            if (files.length > 0) {
+                fileInput.files = files;
+                // Trigger change event to update UI
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        }, false);
+        
+        // Helper to retrieve JWT token from various locations
+        function getJwtToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let jwtToken = localStorage.getItem('jwt_token') || 
+                           sessionStorage.getItem('jwt_token') || 
+                           urlParams.get('token') || 
+                           '{{ jwt_token }}';
+            
+            if (jwtToken && jwtToken !== 'None' && jwtToken !== '') {
+                sessionStorage.setItem('jwt_token', jwtToken);
+            }
+            return jwtToken;
+        }
+
+        // Handle form submission
+        document.getElementById('upload-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const fileInput = document.getElementById('file-input');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select a file to upload');
+                return;
+            }
+            
+            formData.append('file', fileInput.files[0]);
+            
+            const jwtToken = getJwtToken();
+            
+            if (!jwtToken) {
+                alert('Authentication required. Please login again.');
+                return;
+            }
+            
+            try {
+                // Determine upload endpoint based on patient context
+                const response = await fetch(`/api/patient/upload/${currentUploadType}/`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`,
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('File uploaded successfully!');
+                    closeUploadModal();
+                    loadRecentUploads();
+                } else {
+                    alert('Upload failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Upload failed: ' + error.message);
+            }
+        });
+        
+        // Load recent uploads
+        async function loadRecentUploads() {
+            try {
+                const jwtToken = getJwtToken();
+                
+                if (!jwtToken) {
+                    console.log('No JWT token available for loading recent uploads');
+                    return;
+                }
+                
+                const response = await fetch('/api/patient/external-records/', {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`
+                    }
+                });
+                const data = await response.json();
+                
+                const container = document.getElementById('recent-uploads');
+                
+                if (data.results && data.results.length > 0) {
+                    container.innerHTML = data.results.map(record => `
+                        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-900">${record.title}</h4>
+                                    <p class="text-sm text-gray-500">${record.record_type.replace('_', ' ').toUpperCase()} • ${new Date(record.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                ${record.status.toUpperCase()}
+                            </span>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <p>No uploads yet. Upload your first medical record above.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load recent uploads:', error);
+            }
+        }
+        
+        // Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Load recent uploads on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRecentUploads();
+        });
+    </script>
+</body>
+</html>
