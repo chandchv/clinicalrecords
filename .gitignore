@@ -22,6 +22,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .eslintcache
+package-lock.json
 
 # Editor/OS
 .idea/
@@ -33,3 +34,7 @@ yarn-error.log*
 *.swp
 .DS_Store
 Thumbs.db
+
+# Backups and generated files
+*.sql
+migration.log
