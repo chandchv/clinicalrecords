@@ -133,6 +133,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "https://rxdoctor.in",
     "https://www.rxdoctor.in",
+    "https://app.rxdoctor.in",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
