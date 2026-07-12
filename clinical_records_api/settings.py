@@ -177,7 +177,7 @@ SIMPLE_JWT = {
 # RxBackend Integration Settings
 RXBACKEND_SERVICE_URL = os.environ.get('RXBACKEND_SERVICE_URL', 'http://127.0.0.1:8000')
 RXBACKEND_API_TIMEOUT = int(os.environ.get('RXBACKEND_API_TIMEOUT', 30))
-RXBACKEND_SECRET_KEY = os.getenv('SECRET_KEY', "django-insecure-m*t^t0-&@p!zyb5=9g6!x$z@%tz)8i*e_9o@p!-+4&%k6l=3@h")  # MUST match RxBackend SECRET_KEY
+RXBACKEND_SECRET_KEY = os.getenv('RXBACKEND_SECRET_KEY', "django-insecure-m*t^t0-&@p!zyb5=9g6!x$z@%tz)8i*e_9o@p!-+4&%k6l=3@h")  # MUST match RxBackend SECRET_KEY
 
 # User Synchronization Settings
 USER_SYNC_ENABLED = True
