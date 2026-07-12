@@ -55,9 +55,17 @@ class Patient(TenantAwareModel):
     def get_age(self):
         if self.date_of_birth:
             today = timezone.now().date()
-            return today.year - self.date_of_birth.year - (
+            dob = self.date_of_birth
+            # Handle case where date_of_birth might be stored as string
+            if isinstance(dob, str):
+                from datetime import datetime
+                try:
+                    dob = datetime.strptime(dob, '%Y-%m-%d').date()
+                except (ValueError, TypeError):
+                    return None
+            return today.year - dob.year - (
                 (today.month, today.day) < 
-                (self.date_of_birth.month, self.date_of_birth.day)
+                (dob.month, dob.day)
             )
         return None
 
